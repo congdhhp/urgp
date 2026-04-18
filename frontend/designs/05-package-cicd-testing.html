@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Command Horizon | Package CI/CD &amp; Testing</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-highest": "#2d3449",
+                    "surface-container-lowest": "#060e20",
+                    "on-tertiary-fixed-variant": "#004e5c",
+                    "secondary-fixed": "#d8e3fb",
+                    "on-surface": "#dae2fd",
+                    "error-container": "#93000a",
+                    "on-tertiary": "#003640",
+                    "primary-container": "#2563eb",
+                    "on-background": "#dae2fd",
+                    "surface": "#0b1326",
+                    "tertiary-container": "#00788c",
+                    "surface-variant": "#2d3449",
+                    "error": "#ffb4ab",
+                    "on-secondary-fixed-variant": "#3c475a",
+                    "surface-container": "#171f33",
+                    "on-secondary-fixed": "#111c2d",
+                    "on-error-container": "#ffdad6",
+                    "on-secondary": "#263143",
+                    "secondary": "#bcc7de",
+                    "on-primary-container": "#eeefff",
+                    "on-surface-variant": "#c3c6d7",
+                    "secondary-fixed-dim": "#bcc7de",
+                    "outline-variant": "#434655",
+                    "on-secondary-container": "#aeb9d0",
+                    "on-error": "#690005",
+                    "inverse-primary": "#0053db",
+                    "tertiary-fixed": "#acedff",
+                    "tertiary": "#4cd7f6",
+                    "secondary-container": "#3e495d",
+                    "tertiary-fixed-dim": "#4cd7f6",
+                    "on-primary": "#002a78",
+                    "surface-tint": "#b4c5ff",
+                    "surface-bright": "#31394d",
+                    "primary": "#b4c5ff",
+                    "surface-container-low": "#131b2e",
+                    "on-tertiary-fixed": "#001f26",
+                    "surface-dim": "#0b1326",
+                    "on-tertiary-container": "#d7f6ff",
+                    "inverse-surface": "#dae2fd",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "on-primary-fixed": "#00174b",
+                    "surface-container-high": "#222a3d",
+                    "background": "#0b1326",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "primary-fixed": "#dbe1ff",
+                    "outline": "#8d90a0",
+                    "inverse-on-surface": "#283044"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Inter", "sans-serif"],
+                    "body": ["Inter", "sans-serif"],
+                    "label": ["JetBrains Mono", "monospace"]
+            }
+          },
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .tonal-stepping-no-lines {
+            border: none !important;
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0b1326; }
+        ::-webkit-scrollbar-thumb { background: #2d3449; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #434655; }
+            @media (min-width: 768px) {
+            :root {
+                --sidebar-expanded-width: 16rem;
+                --sidebar-collapsed-width: 5rem;
+            }
+            .js-sidebar {
+                width: var(--sidebar-expanded-width);
+                overflow: hidden;
+                transition: width 220ms ease;
+            }
+            .js-offset-left {
+                transition: left 220ms ease;
+            }
+            .js-offset-margin {
+                transition: margin-left 220ms ease;
+            }
+            .js-offset-padding {
+                transition: padding-left 220ms ease;
+            }
+            .js-offset-width {
+                transition: width 220ms ease;
+            }
+            body.sidebar-collapsed .js-sidebar {
+                width: var(--sidebar-collapsed-width);
+            }
+            body.sidebar-collapsed .js-offset-left {
+                left: var(--sidebar-collapsed-width) !important;
+            }
+            body.sidebar-collapsed .js-offset-margin {
+                margin-left: var(--sidebar-collapsed-width) !important;
+            }
+            body.sidebar-collapsed .js-offset-padding {
+                padding-left: var(--sidebar-collapsed-width) !important;
+            }
+            body.sidebar-collapsed .js-offset-width {
+                width: calc(100% - var(--sidebar-collapsed-width)) !important;
+            }
+            body.sidebar-collapsed .js-sidebar .js-sidebar-brand {
+                justify-content: center;
+                padding-left: 0;
+                padding-right: 0;
+            }
+            body.sidebar-collapsed .js-sidebar .js-sidebar-meta {
+                display: none;
+            }
+            body.sidebar-collapsed .js-sidebar nav a,
+            body.sidebar-collapsed .js-sidebar .mt-auto a {
+                justify-content: center;
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+            }
+            body.sidebar-collapsed .js-sidebar nav a span:not(.material-symbols-outlined),
+            body.sidebar-collapsed .js-sidebar .mt-auto a span:not(.material-symbols-outlined) {
+                display: none;
+            }
+            body.sidebar-collapsed .js-sidebar .js-sidebar-primary-btn {
+                width: 2.5rem;
+                height: 2.5rem;
+                margin-left: auto;
+                margin-right: auto;
+                padding: 0;
+                justify-content: center;
+            }
+            body.sidebar-collapsed .js-sidebar .js-sidebar-primary-btn .js-sidebar-label {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface flex flex-col min-h-screen selection:bg-primary/30">
+<!-- Sidebar Shell -->
+<aside class="js-sidebar fixed left-0 top-0 h-screen w-64 bg-[#131b2e] border-r border-[#434655]/20 z-[60] hidden md:flex flex-col pt-20 pb-6 px-4">
+<div class="js-sidebar-brand flex items-center gap-3 mb-8 px-4">
+<div class="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container">rocket_launch</span>
+</div>
+<div class="js-sidebar-meta">
+<h3 class="font-bold text-on-surface leading-tight">Mission Control</h3>
+<p class="text-xs text-on-surface/50 mono">Operator 01</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-medium text-sm tracking-wide">Dashboard</span>
+</a>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">construction</span>
+<span class="font-medium text-sm tracking-wide">Builds</span>
+</a>
+<a class="bg-[#222a3d] text-[#dae2fd] rounded-lg px-4 py-3 flex items-center gap-3" href="#">
+<span class="material-symbols-outlined text-[#2563eb]">inventory_2</span>
+<span class="font-medium text-sm tracking-wide">Packages</span>
+</a>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">compare_arrows</span>
+<span class="font-medium text-sm tracking-wide">Comparisons</span>
+</a>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-medium text-sm tracking-wide">Settings</span>
+</a>
+</nav>
+<div class="mt-auto space-y-1">
+<button class="js-sidebar-primary-btn w-full mb-6 py-3 px-4 bg-primary-container text-on-primary-container rounded-lg font-bold text-sm active:scale-95 duration-200 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-base">add_circle</span>
+<span class="js-sidebar-label">New Build</span>
+</button>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-medium text-sm tracking-wide">Support</span>
+</a>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg" href="#">
+<span class="material-symbols-outlined">code</span>
+<span class="font-medium text-sm tracking-wide">API</span>
+</a>
+</div>
+</aside>
+<!-- Top Bar Shell -->
+<header class="js-offset-left fixed top-0 left-0 right-0 md:left-64 z-50 bg-[#131b2e]/80 backdrop-blur-xl border-b border-[#434655]/20 flex justify-between items-center px-6 h-16">
+<div class="flex items-center gap-8">
+<button aria-label="Collapse sidebar" class="hidden md:inline-flex w-9 h-9 items-center justify-center rounded-lg border border-outline-variant/20 text-on-surface/70 hover:text-on-surface hover:bg-surface-container-high transition-colors" id="sidebarToggle" type="button">
+<span class="material-symbols-outlined text-lg" id="sidebarToggleIcon">menu_open</span>
+</button>
+<span class="text-xl font-black text-[#dae2fd] tracking-tight">Command Horizon</span>
+<div class="hidden lg:flex items-center gap-2 bg-[#222a3d] px-3 py-1.5 rounded-lg border border-outline-variant/20">
+<span class="material-symbols-outlined text-sm text-on-surface/40">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm text-on-surface placeholder:text-on-surface/30 w-64 mono" placeholder="Search builds or assets..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden md:flex items-center gap-4 border-r border-outline-variant/20 pr-6">
+<a class="text-[#dae2fd]/60 font-medium text-sm hover:text-[#2563eb]" href="#">Release Hub</a>
+<a class="text-[#dae2fd]/60 font-medium text-sm hover:text-[#2563eb]" href="#">Audit Logs</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative text-[#dae2fd]/60 hover:text-[#dae2fd]">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="text-[#dae2fd]/60 hover:text-[#dae2fd]">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="hidden sm:flex items-center gap-3 ml-2">
+<div class="text-right">
+<p class="text-xs font-bold">S32 Design Studio</p>
+<p class="text-[10px] text-on-surface/50 mono">BUILD_MASTER_X</p>
+</div>
+<img class="w-8 h-8 rounded-lg object-cover ring-2 ring-[#2563eb]/20" data-alt="Portrait of a male professional systems operator in a modern tech environment with blue atmospheric lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPS6zF3cGrLpka_Jr7mD89_ZdVXAVmB3C8rdDiw2p31yvfu427O278Hy1zcJ9Bqxv9pw8X_-jVOpgBhX2zEyRtRcpdWnzwlx_J75_RSLX6qLFFFK8Iv0jMiypUsVALZaNdzKvcyP3lKv9tJqvxdSSdFjrHb80JrTjIZ0-V6yAJcye4KfxLxv9fLpDcYsfrkaf7fKoJ01opp_gzMaC4cKb35MqrN0LG58YTbxYPItmy7Mic2fdN7tOBVIHmlQ6QR6QdSZ5wyG16xfHg"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="js-offset-margin flex-1 pt-20 pb-12 md:ml-64 px-6 md:px-10">
+<!-- Breadcrumb -->
+<nav class="flex items-center space-x-2 text-[10px] font-mono tracking-wider uppercase text-on-surface-variant/60 mb-6">
+<a class="hover:text-primary transition-colors" href="#">Products</a>
+<span class="material-symbols-outlined text-[12px]">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="#">S32 Design Studio</a>
+<span class="material-symbols-outlined text-[12px]">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="#">Nightly</a>
+<span class="material-symbols-outlined text-[12px]">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="#">Build #260330</a>
+<span class="material-symbols-outlined text-[12px]">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="#">com.nxp.s32.ide.core</a>
+<span class="material-symbols-outlined text-[12px]">chevron_right</span>
+<span class="text-on-surface">CI/CD</span>
+</nav>
+<!-- Package Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<h2 class="text-2xl font-mono font-bold text-on-surface tracking-tight">com.nxp.s32.ide.core</h2>
+<span class="bg-surface-container-highest text-tertiary px-3 py-0.5 rounded-full text-[10px] font-bold tracking-widest uppercase border border-outline-variant/20">Eclipse P2</span>
+</div>
+<div class="flex items-center gap-4 text-sm text-on-surface-variant">
+<span class="flex items-center gap-1.5 font-mono"><span class="material-symbols-outlined text-sm">sell</span> 3.8.0.20260330</span>
+<span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">schedule</span> Built 2 hours ago</span>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="bg-primary-container hover:brightness-110 text-on-primary-container px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all">
+<span class="material-symbols-outlined text-sm">download</span> Download Artifacts
+                </button>
+</div>
+</div>
+<!-- Tab Navigation -->
+<div class="flex items-center border-b border-outline-variant/10 mb-8 space-x-8">
+<button class="pb-3 text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors relative">
+                Source &amp; Changes
+            </button>
+<button class="pb-3 text-sm font-semibold text-primary transition-colors relative">
+                CI/CD &amp; Testing
+                <span class="absolute bottom-0 left-0 w-full h-0.5 bg-primary"></span>
+</button>
+<button class="pb-3 text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors relative">
+                History
+            </button>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<!-- Jenkins Build Info Section -->
+<section class="lg:col-span-8 bg-surface-container-low rounded-xl overflow-hidden shadow-2xl">
+<div class="p-6 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 bg-surface-container-highest rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary">settings_suggest</span>
+</div>
+<div>
+<h3 class="text-lg font-bold">Jenkins Build Information</h3>
+<p class="text-xs text-on-surface-variant">Primary Pipeline Execution</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="bg-tertiary/10 text-tertiary px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase">SUCCESS</span>
+<button class="text-primary hover:bg-primary/10 px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-2 uppercase tracking-wide">
+                            Open in Jenkins <span class="material-symbols-outlined text-sm">open_in_new</span>
+</button>
+</div>
+</div>
+<div class="px-6 pb-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="space-y-4">
+<div class="flex flex-col">
+<span class="text-[10px] uppercase tracking-widest text-on-surface-variant/60 font-semibold mb-1">Build Number</span>
+<a class="text-primary hover:underline font-mono text-sm" href="#">#18234</a>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] uppercase tracking-widest text-on-surface-variant/60 font-semibold mb-1">Pipeline Name</span>
+<span class="text-sm font-mono">s32-ide-core-nightly</span>
+</div>
+</div>
+<div class="space-y-4">
+<div class="flex flex-col">
+<span class="text-[10px] uppercase tracking-widest text-on-surface-variant/60 font-semibold mb-1">Execution Node</span>
+<span class="text-sm">build-agent-linux-04</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] uppercase tracking-widest text-on-surface-variant/60 font-semibold mb-1">Triggered By</span>
+<span class="text-sm flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">commit</span> SCM Change</span>
+</div>
+</div>
+<div class="space-y-4">
+<div class="flex flex-col">
+<span class="text-[10px] uppercase tracking-widest text-on-surface-variant/60 font-semibold mb-1">Timestamp</span>
+<span class="text-sm">Mar 30, 2026, 14:22:11</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] uppercase tracking-widest text-on-surface-variant/60 font-semibold mb-1">Duration</span>
+<span class="text-sm">4m 12s</span>
+</div>
+</div>
+<div class="md:col-span-3 pt-2">
+<div class="flex flex-col bg-surface-container-lowest p-3 rounded-lg border border-outline-variant/10">
+<span class="text-[10px] uppercase tracking-widest text-on-surface-variant/60 font-semibold mb-1">External Job URL</span>
+<span class="text-xs font-mono text-primary truncate">https://jenkins.internal.nxp.com/job/s32-ide-core/18234</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Artifact Verification (Right Side) -->
+<aside class="lg:col-span-4 flex flex-col gap-6">
+<div class="bg-surface-container-high rounded-xl p-6 relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4">
+<span class="material-symbols-outlined text-tertiary opacity-30 text-5xl">verified_user</span>
+</div>
+<h3 class="text-sm font-bold mb-4 uppercase tracking-widest text-on-surface-variant">Artifact Verification</h3>
+<div class="space-y-4">
+<div>
+<span class="text-[10px] uppercase tracking-widest text-on-surface-variant/60 block mb-1">SHA-256 Digest</span>
+<div class="bg-surface-container-lowest p-2 rounded font-mono text-[11px] text-on-surface break-all border border-outline-variant/10">
+                                f2ca1bb6c7e907d06dafe4687e579fce76b3776a29d43c7b4542d109f067d71b
+                            </div>
+</div>
+<div>
+<span class="text-[10px] uppercase tracking-widest text-on-surface-variant/60 block mb-1">Storage URI</span>
+<span class="text-[11px] font-mono text-primary flex items-center gap-1">
+                                artifactory://nxp/s32-design/nightly/build-260330/core.zip
+                            </span>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-outline-variant/10">
+<span class="text-xs font-semibold flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-lg" style="font-variation-settings: 'FILL' 1;">lock</span> Governance Lock
+                            </span>
+<span class="bg-tertiary/10 text-tertiary px-2 py-0.5 rounded text-[10px] font-bold">LOCKED</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-low rounded-xl p-6 border-l-4 border-tertiary">
+<h3 class="text-sm font-bold mb-2">Compliance Check</h3>
+<p class="text-xs text-on-surface-variant leading-relaxed">This build has passed all 12 corporate governance gates including OSS license scans and static analysis (Coverity).</p>
+</div>
+</aside>
+<!-- Build Log Section -->
+<section class="lg:col-span-12 bg-surface-container-low rounded-xl overflow-hidden shadow-2xl">
+<div class="p-4 bg-surface-container-high flex items-center justify-between border-b border-outline-variant/10">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant">terminal</span>
+<h3 class="text-sm font-bold uppercase tracking-wider">Build Log</h3>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-1.5 hover:bg-surface-bright rounded text-on-surface-variant transition-colors" title="Copy Log">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+</button>
+<button class="bg-surface-bright hover:bg-surface-container-highest px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider transition-all">
+                            Download Full Log
+                        </button>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 font-mono text-[12px] leading-relaxed overflow-x-auto max-h-[400px] overflow-y-auto">
+<div class="flex gap-4">
+<div class="text-on-surface-variant/40 text-right select-none pr-2 border-r border-outline-variant/10">
+                            01<br/>02<br/>03<br/>04<br/>05<br/>06<br/>07<br/>08<br/>09<br/>10<br/>11<br/>12<br/>13<br/>14<br/>15<br/>16<br/>17<br/>18
+                        </div>
+<div class="whitespace-pre text-on-surface-variant/90">
+<span class="text-blue-400/60">[14:22:11]</span> <span class="text-on-surface">Initializing Build Environment on build-agent-linux-04...</span>
+<span class="text-blue-400/60">[14:22:12]</span> <span class="text-on-surface">Checking out SCM repository: git@nxp-git.com:s32/ide-core.git</span>
+<span class="text-blue-400/60">[14:22:15]</span> <span class="text-on-surface">Revision: 7a82bc192... (origin/main)</span>
+<span class="text-blue-400/60">[14:22:18]</span> <span class="text-on-surface">Executing: mvn clean install -DskipTests=false -Pproduction</span>
+<span class="text-blue-400/60">[14:23:45]</span> <span class="text-on-surface">Compiling 842 source files...</span>
+<span class="text-blue-400/60">[14:24:10]</span> <span class="text-on-surface">Build success. Proceeding to unit test phase...</span>
+<span class="text-blue-400/60">[14:24:12]</span> <span class="text-tertiary">Running com.nxp.s32.ide.core.gpio.TestRunner...</span>
+<span class="text-blue-400/60">[14:25:02]</span> <span class="text-on-surface">Tests run: 847, Failures: 0, Errors: 0, Skipped: 0</span>
+<span class="text-blue-400/60">[14:25:05]</span> <span class="text-on-surface">Gathering artifacts for packaging...</span>
+<span class="text-blue-400/60">[14:25:30]</span> <span class="text-on-surface">Generating P2 Metadata...</span>
+<span class="text-blue-400/60">[14:25:55]</span> <span class="text-on-surface">Uploading to Artifactory... 100% complete</span>
+<span class="text-blue-400/60">[14:26:10]</span> <span class="text-tertiary font-bold">BUILD SUCCESS</span>
+<span class="text-blue-400/60">[14:26:10]</span> <span class="text-on-surface">Total time: 3.965 s</span>
+<span class="text-blue-400/60">[14:26:11]</span> <span class="text-on-surface">Finished at: 2026-03-30T14:26:11Z</span>
+<span class="text-blue-400/60">[14:26:11]</span> <span class="text-on-surface">Final Memory: 112M/454M</span>
+<span class="text-blue-400/60">[14:26:12]</span> <span class="text-on-surface-variant/50">------------------------------------------------------------------------</span>
+<span class="text-blue-400/60">[14:26:12]</span> <span class="text-tertiary">Triggering Downstream Integration Tests...</span>
+<span class="text-blue-400/60">[14:26:23]</span> <span class="text-on-surface">Done.</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Test Results Section -->
+<section class="lg:col-span-12 space-y-6">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-3">
+<h3 class="text-lg font-bold">Test Results</h3>
+<span class="bg-tertiary text-on-tertiary px-3 py-0.5 rounded-full text-[11px] font-bold tracking-tight flex items-center gap-1.5">
+<span class="material-symbols-outlined text-xs">check_circle</span> 971 / 971 Passed (100%)
+                        </span>
+</div>
+</div>
+<!-- Test Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="bg-surface-container-low p-5 rounded-xl flex items-center justify-between group hover:bg-surface-container-high transition-all">
+<div class="flex items-center gap-4">
+<div class="relative w-12 h-12 flex items-center justify-center">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-container-highest" cx="24" cy="24" fill="transparent" r="20" stroke="currentColor" stroke-width="4"></circle>
+<circle class="text-tertiary" cx="24" cy="24" fill="transparent" r="20" stroke="currentColor" stroke-dasharray="125.6" stroke-dashoffset="0" stroke-width="4"></circle>
+</svg>
+<span class="absolute text-[10px] font-bold">100%</span>
+</div>
+<div>
+<h4 class="text-sm font-bold">Unit Tests</h4>
+<p class="text-xs text-on-surface-variant">847 Tests Executed</p>
+</div>
+</div>
+<div class="text-right">
+<span class="text-tertiary font-bold block">847 Pass</span>
+<span class="text-[10px] text-on-surface-variant/60 uppercase">0 Failed</span>
+</div>
+</div>
+<div class="bg-surface-container-low p-5 rounded-xl flex items-center justify-between group hover:bg-surface-container-high transition-all">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-tertiary/10 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary">fact_check</span>
+</div>
+<div>
+<h4 class="text-sm font-bold">Integration Tests</h4>
+<p class="text-xs text-on-surface-variant">124 Tests Executed</p>
+</div>
+</div>
+<div class="text-right">
+<span class="text-tertiary font-bold block">124 Pass</span>
+<span class="text-[10px] text-on-surface-variant/60 uppercase">0 Failed</span>
+</div>
+</div>
+<div class="bg-surface-container-low p-5 rounded-xl flex items-center justify-between opacity-50 grayscale cursor-not-allowed">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-outline-variant/20 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-outline">history_toggle_off</span>
+</div>
+<div>
+<h4 class="text-sm font-bold">Smoke Tests</h4>
+<p class="text-xs text-on-surface-variant">N/A - Not Triggered</p>
+</div>
+</div>
+<div class="text-right">
+<span class="text-outline font-bold block">-</span>
+<span class="text-[10px] text-on-surface-variant/60 uppercase">Pending</span>
+</div>
+</div>
+</div>
+<!-- Test Suites Table -->
+<div class="bg-surface-container-low rounded-xl overflow-hidden">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-high">
+<tr>
+<th class="px-6 py-4 text-[10px] font-mono tracking-widest uppercase text-on-surface-variant/60">Suite Name</th>
+<th class="px-6 py-4 text-[10px] font-mono tracking-widest uppercase text-on-surface-variant/60">Tests</th>
+<th class="px-6 py-4 text-[10px] font-mono tracking-widest uppercase text-on-surface-variant/60">Passed</th>
+<th class="px-6 py-4 text-[10px] font-mono tracking-widest uppercase text-on-surface-variant/60">Failed</th>
+<th class="px-6 py-4 text-[10px] font-mono tracking-widest uppercase text-on-surface-variant/60">Skipped</th>
+<th class="px-6 py-4 text-[10px] font-mono tracking-widest uppercase text-on-surface-variant/60">Duration</th>
+<th class="px-6 py-4 text-[10px] font-mono tracking-widest uppercase text-on-surface-variant/60">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+<tr class="hover:bg-surface-bright transition-colors cursor-pointer group">
+<td class="px-6 py-4 text-sm font-mono flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant/40 group-hover:rotate-90 transition-transform">chevron_right</span>
+                                    com.nxp.s32.ide.core.gpio
+                                </td>
+<td class="px-6 py-4 text-sm">242</td>
+<td class="px-6 py-4 text-sm text-tertiary">242</td>
+<td class="px-6 py-4 text-sm">0</td>
+<td class="px-6 py-4 text-sm">0</td>
+<td class="px-6 py-4 text-sm font-mono">1m 12s</td>
+<td class="px-6 py-4">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-bright transition-colors cursor-pointer group">
+<td class="px-6 py-4 text-sm font-mono flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant/40 group-hover:rotate-90 transition-transform">chevron_right</span>
+                                    com.nxp.s32.ide.core.debugger
+                                </td>
+<td class="px-6 py-4 text-sm">415</td>
+<td class="px-6 py-4 text-sm text-tertiary">415</td>
+<td class="px-6 py-4 text-sm">0</td>
+<td class="px-6 py-4 text-sm">0</td>
+<td class="px-6 py-4 text-sm font-mono">2m 45s</td>
+<td class="px-6 py-4">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-bright transition-colors cursor-pointer group">
+<td class="px-6 py-4 text-sm font-mono flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant/40 group-hover:rotate-90 transition-transform">chevron_right</span>
+                                    com.nxp.s32.ide.core.integration.v2
+                                </td>
+<td class="px-6 py-4 text-sm">314</td>
+<td class="px-6 py-4 text-sm text-tertiary">314</td>
+<td class="px-6 py-4 text-sm">0</td>
+<td class="px-6 py-4 text-sm">0</td>
+<td class="px-6 py-4 text-sm font-mono">52s</td>
+<td class="px-6 py-4">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+</main>
+<!-- Navigation suppression check: Since this is a detail page, we maintain navigation but keep sidebar visible for context -->
+<script>
+(function () {
+  const sidebarToggle = document.getElementById('sidebarToggle');
+  const sidebarToggleIcon = document.getElementById('sidebarToggleIcon');
+  if (!sidebarToggle || !sidebarToggleIcon) return;
+
+  const storageKey = 'urgp.sidebarCollapsed';
+  const applyState = (collapsed) => {
+    document.body.classList.toggle('sidebar-collapsed', collapsed);
+    sidebarToggleIcon.textContent = collapsed ? 'menu' : 'menu_open';
+    sidebarToggle.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+    sidebarToggle.setAttribute('aria-expanded', String(!collapsed));
+  };
+
+  const savedState = localStorage.getItem(storageKey);
+  applyState(savedState === '1');
+
+  sidebarToggle.addEventListener('click', () => {
+    const collapsed = !document.body.classList.contains('sidebar-collapsed');
+    applyState(collapsed);
+    localStorage.setItem(storageKey, collapsed ? '1' : '0');
+  });
+})();
+</script>
+</body></html>
+
+
