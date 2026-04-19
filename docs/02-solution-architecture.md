@@ -29,9 +29,10 @@ Rather than designing the data model around S32-specific concerns, the entity st
 1. **Workspace / Organization:** The top-level organizational boundary (e.g., *Automotive R&D Division*, *Cloud Services*).
 2. **Product:** Represents an independent software project (e.g., *S32 Design Studio*, *AutoCore OS*).
    - **Attributes:** Contains API connection configuration for the Product's Git Provider and Issue Tracker.
-3. **Release Train:** A delivery channel within a Product (e.g., *Nightly*, *Weekly*, *LTS*, *Hotfix*).
+3. **Release:** A versioned release milestone within a Product (e.g., *S32 DS 3.6.8 RFP*, *S32 DS 3.6.7 CD*). Groups all builds targeting the same release version.
 4. **Build Manifest:** The core entity representing a specific build version (e.g., Build `260330`). Anchors the Traceability Graph and test metrics.
-5. **Universal Artifacts:** Regardless of physical format, the Control Plane's database stores only five fields per artifact:
+   - **Build Type:** An attribute classifying the build cadence: `Nightly`, `Weekly`, `RC` (Release Candidate), or `Hotfix`. Used as a filter within a Release, not as a separate hierarchy level.
+5. **Universal Artifacts (Packages):** Regardless of physical format, the Control Plane's database stores only five fields per artifact:
    - `Name` — Human-readable artifact identifier
    - `Type` — Enumeration: `eclipse_p2`, `oci_image`, `binary`, `npm_tarball`, `maven_jar`, `python_wheel`, `generic`
    - `Storage_URI` — Location reference (e.g., `s3://...`, `nexus://...`, `sharepoint://...`)

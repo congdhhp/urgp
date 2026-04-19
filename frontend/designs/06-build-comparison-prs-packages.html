@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Command Horizon | Build Comparison - PRs &amp; Packages</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface": "#0b1326",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-fixed": "#acedff",
+                        "surface-container-highest": "#2d3449",
+                        "on-surface-variant": "#c3c6d7",
+                        "on-secondary-container": "#aeb9d0",
+                        "on-error": "#690005",
+                        "error-container": "#93000a",
+                        "on-background": "#dae2fd",
+                        "secondary-fixed-dim": "#bcc7de",
+                        "on-secondary": "#263143",
+                        "primary-fixed": "#dbe1ff",
+                        "on-tertiary-fixed": "#001f26",
+                        "error": "#ffb4ab",
+                        "tertiary-container": "#00788c",
+                        "on-tertiary": "#003640",
+                        "on-surface": "#dae2fd",
+                        "background": "#0b1326",
+                        "tertiary-fixed-dim": "#4cd7f6",
+                        "inverse-primary": "#0053db",
+                        "surface-container-low": "#131b2e",
+                        "on-secondary-fixed-variant": "#3c475a",
+                        "primary": "#b4c5ff",
+                        "on-tertiary-container": "#d7f6ff",
+                        "surface-container-lowest": "#060e20",
+                        "on-tertiary-fixed-variant": "#004e5c",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "surface-container-high": "#222a3d",
+                        "surface-bright": "#31394d",
+                        "inverse-surface": "#dae2fd",
+                        "inverse-on-surface": "#283044",
+                        "primary-container": "#2563eb",
+                        "on-primary": "#002a78",
+                        "on-secondary-fixed": "#111c2d",
+                        "secondary-container": "#3e495d",
+                        "on-primary-container": "#eeefff",
+                        "tertiary": "#4cd7f6",
+                        "surface-dim": "#0b1326",
+                        "secondary-fixed": "#d8e3fb",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface-tint": "#b4c5ff",
+                        "on-primary-fixed": "#00174b",
+                        "outline": "#8d90a0",
+                        "outline-variant": "#434655",
+                        "surface-container": "#171f33",
+                        "surface-variant": "#2d3449",
+                        "secondary": "#bcc7de"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["JetBrains Mono", "monospace"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .glass-nav {
+            background-color: rgba(11, 19, 38, 0.6);
+            backdrop-filter: blur(20px);
+        }
+            @media (min-width: 768px) {
+            :root {
+                --sidebar-expanded-width: 16rem;
+                --sidebar-collapsed-width: 5rem;
+            }
+            .js-sidebar {
+                width: var(--sidebar-expanded-width);
+                overflow: hidden;
+                transition: width 220ms ease;
+            }
+            .js-offset-left {
+                transition: left 220ms ease;
+            }
+            .js-offset-margin {
+                transition: margin-left 220ms ease;
+            }
+            .js-offset-padding {
+                transition: padding-left 220ms ease;
+            }
+            .js-offset-width {
+                transition: width 220ms ease;
+            }
+            body.sidebar-collapsed .js-sidebar {
+                width: var(--sidebar-collapsed-width);
+            }
+            body.sidebar-collapsed .js-offset-left {
+                left: var(--sidebar-collapsed-width) !important;
+            }
+            body.sidebar-collapsed .js-offset-margin {
+                margin-left: var(--sidebar-collapsed-width) !important;
+            }
+            body.sidebar-collapsed .js-offset-padding {
+                padding-left: var(--sidebar-collapsed-width) !important;
+            }
+            body.sidebar-collapsed .js-offset-width {
+                width: calc(100% - var(--sidebar-collapsed-width)) !important;
+            }
+            body.sidebar-collapsed .js-sidebar .js-sidebar-brand {
+                justify-content: center;
+                padding-left: 0;
+                padding-right: 0;
+            }
+            body.sidebar-collapsed .js-sidebar .js-sidebar-meta {
+                display: none;
+            }
+            body.sidebar-collapsed .js-sidebar nav a,
+            body.sidebar-collapsed .js-sidebar .mt-auto a {
+                justify-content: center;
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+            }
+            body.sidebar-collapsed .js-sidebar nav a span:not(.material-symbols-outlined),
+            body.sidebar-collapsed .js-sidebar .mt-auto a span:not(.material-symbols-outlined) {
+                display: none;
+            }
+            body.sidebar-collapsed .js-sidebar .js-sidebar-primary-btn {
+                width: 2.5rem;
+                height: 2.5rem;
+                margin-left: auto;
+                margin-right: auto;
+                padding: 0;
+                justify-content: center;
+            }
+            body.sidebar-collapsed .js-sidebar .js-sidebar-primary-btn .js-sidebar-label {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface flex flex-col min-h-screen selection:bg-primary/30">
+<!-- Sidebar Shell -->
+<aside class="js-sidebar fixed left-0 top-0 h-screen w-64 bg-[#131b2e] border-r border-[#434655]/20 z-[60] hidden md:flex flex-col pt-20 pb-6 px-4">
+<div class="js-sidebar-brand flex items-center gap-3 mb-8 px-4">
+<div class="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container">rocket_launch</span>
+</div>
+<div class="js-sidebar-meta">
+<h3 class="font-bold text-on-surface leading-tight">Mission Control</h3>
+<p class="text-xs text-on-surface/50 mono">Operator 01</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="bg-[#222a3d] text-[#dae2fd] rounded-lg px-4 py-3 flex items-center gap-3" href="00-products.html">
+<span class="material-symbols-outlined text-[#2563eb]">apps</span>
+<span class="font-medium text-sm tracking-wide">Products</span>
+</a>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">construction</span>
+<span class="font-medium text-sm tracking-wide">Builds</span>
+</a>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-medium text-sm tracking-wide">Packages</span>
+</a>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg transition-colors duration-150" href="05-build-comparison-issues.html">
+<span class="material-symbols-outlined">compare_arrows</span>
+<span class="font-medium text-sm tracking-wide">Comparisons</span>
+</a>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-medium text-sm tracking-wide">Settings</span>
+</a>
+</nav>
+<div class="mt-auto space-y-1">
+<button class="js-sidebar-primary-btn w-full mb-6 py-3 px-4 bg-primary-container text-on-primary-container rounded-lg font-bold text-sm active:scale-95 duration-200 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-base">add_circle</span>
+<span class="js-sidebar-label">New Build</span>
+</button>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-medium text-sm tracking-wide">Support</span>
+</a>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg" href="#">
+<span class="material-symbols-outlined">code</span>
+<span class="font-medium text-sm tracking-wide">API</span>
+</a>
+</div>
+</aside>
+<!-- Top Bar Shell -->
+<header class="js-offset-left fixed top-0 left-0 right-0 md:left-64 z-50 bg-[#131b2e]/80 backdrop-blur-xl border-b border-[#434655]/20 flex justify-between items-center px-6 h-16">
+<div class="flex items-center gap-8">
+<button aria-label="Collapse sidebar" class="hidden md:inline-flex w-9 h-9 items-center justify-center rounded-lg border border-outline-variant/20 text-on-surface/70 hover:text-on-surface hover:bg-surface-container-high transition-colors" id="sidebarToggle" type="button">
+<span class="material-symbols-outlined text-lg" id="sidebarToggleIcon">menu_open</span>
+</button>
+<span class="text-xl font-black text-[#dae2fd] tracking-tight">Command Horizon</span>
+<div class="hidden lg:flex items-center gap-2 bg-[#222a3d] px-3 py-1.5 rounded-lg border border-outline-variant/20">
+<span class="material-symbols-outlined text-sm text-on-surface/40">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm text-on-surface placeholder:text-on-surface/30 w-64 mono" placeholder="Search builds or assets..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden md:flex items-center gap-4 border-r border-outline-variant/20 pr-6">
+<a class="text-[#dae2fd]/60 font-medium text-sm hover:text-[#2563eb]" href="#">Release Hub</a>
+<a class="text-[#dae2fd]/60 font-medium text-sm hover:text-[#2563eb]" href="#">Audit Logs</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative text-[#dae2fd]/60 hover:text-[#dae2fd]">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="text-[#dae2fd]/60 hover:text-[#dae2fd]">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="hidden sm:flex items-center gap-3 ml-2">
+<div class="text-right">
+<p class="text-xs font-bold">S32 Design Studio</p>
+<p class="text-[10px] text-on-surface/50 mono">BUILD_MASTER_X</p>
+</div>
+<img class="w-8 h-8 rounded-lg object-cover ring-2 ring-[#2563eb]/20" data-alt="Portrait of a male professional systems operator in a modern tech environment with blue atmospheric lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPS6zF3cGrLpka_Jr7mD89_ZdVXAVmB3C8rdDiw2p31yvfu427O278Hy1zcJ9Bqxv9pw8X_-jVOpgBhX2zEyRtRcpdWnzwlx_J75_RSLX6qLFFFK8Iv0jMiypUsVALZaNdzKvcyP3lKv9tJqvxdSSdFjrHb80JrTjIZ0-V6yAJcye4KfxLxv9fLpDcYsfrkaf7fKoJ01opp_gzMaC4cKb35MqrN0LG58YTbxYPItmy7Mic2fdN7tOBVIHmlQ6QR6QdSZ5wyG16xfHg"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="js-offset-margin flex-1 md:ml-64 pt-16 min-h-screen">
+<div class="w-full p-8">
+<!-- Breadcrumb -->
+<nav class="flex items-center gap-2 mb-6 text-xs mono text-slate-500">
+<a class="hover:text-primary transition-colors" href="00-products.html">Products</a>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="01-product-releases.html">S32 Design Studio</a>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="02-release-builds.html">S32 DS 3.6.8 RFP</a>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span>Build Comparison</span>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span class="text-primary">#260328 -> #260330</span>
+</nav>
+<!-- Header Section -->
+<div class="mb-8">
+<div class="flex items-end justify-between mb-4">
+<div>
+<h1 class="text-3xl font-extrabold tracking-tight mb-2">Build #260328 -> Build #260330</h1>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4 py-1.5 px-4 bg-surface-container-low rounded-lg ring-1 ring-white/5">
+<span class="mono text-sm text-on-surface-variant"><b class="text-primary">47</b> commits</span>
+<span class="w-px h-3 bg-white/10"></span>
+<span class="mono text-sm text-on-surface-variant"><b class="text-primary">12</b> PRs</span>
+<span class="w-px h-3 bg-white/10"></span>
+<span class="mono text-sm text-on-surface-variant"><b class="text-primary">8</b> Issues</span>
+<span class="w-px h-3 bg-white/10"></span>
+<span class="mono text-sm text-tertiary-fixed-dim">+2 pkg</span>
+<span class="w-px h-3 bg-white/10"></span>
+<span class="mono text-sm text-error">-1 pkg</span>
+</div>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 bg-surface-container-high hover:bg-surface-bright transition-colors rounded-lg text-sm font-medium flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">history</span>
+                            Version History
+                        </button>
+<button class="px-4 py-2 bg-primary-container hover:brightness-110 transition-all rounded-lg text-sm font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">rocket_launch</span>
+                            Promote Build
+                        </button>
+</div>
+</div>
+<!-- Tab Bar -->
+<div class="flex items-center gap-8 border-b border-white/5 px-2">
+<button class="py-4 text-sm font-medium text-slate-500 hover:text-slate-200 transition-colors">Jira Issues</button>
+<button class="py-4 text-sm font-bold text-primary border-b-2 border-primary">Pull Requests</button>
+<button class="py-4 text-sm font-medium text-slate-500 hover:text-slate-200 transition-colors">Package Changes</button>
+<button class="py-4 text-sm font-medium text-slate-500 hover:text-slate-200 transition-colors">Commits</button>
+</div>
+</div>
+<!-- PR Table Grouped by Jira -->
+<div class="space-y-6">
+<!-- Group: PROJ-1234 -->
+<section class="bg-surface-container-low rounded-xl overflow-hidden ring-1 ring-white/5">
+<header class="bg-surface-container px-6 py-4 flex items-center justify-between border-l-4 border-error">
+<div class="flex items-center gap-4">
+<span class="mono text-error font-bold text-sm">PROJ-1234</span>
+<h3 class="text-on-surface font-semibold">Fix GPIO driver init</h3>
+</div>
+<span class="px-3 py-1 bg-error-container text-on-error-container text-[10px] font-bold uppercase tracking-widest rounded-full">Critical</span>
+</header>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-surface-container-low border-b border-white/5">
+<tr class="text-[10px] uppercase tracking-widest text-slate-500">
+<th class="px-6 py-4 font-medium">PR ID</th>
+<th class="px-6 py-4 font-medium">Repository</th>
+<th class="px-6 py-4 font-medium">Package Scope</th>
+<th class="px-6 py-4 font-medium">Author</th>
+<th class="px-6 py-4 font-medium">Files</th>
+<th class="px-6 py-4 font-medium">Build Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/5">
+<tr class="hover:bg-surface-bright transition-colors">
+<td class="px-6 py-4 mono text-sm text-primary">#456</td>
+<td class="px-6 py-4 text-sm">kernel-drivers-s32</td>
+<td class="px-6 py-4"><span class="px-2 py-0.5 bg-surface-container-highest rounded-full mono text-[10px]">nxp.gpio.core</span></td>
+<td class="px-6 py-4 flex items-center gap-2">
+<div class="w-5 h-5 rounded-full bg-blue-900"></div>
+<span class="text-sm">j.doe</span>
+</td>
+<td class="px-6 py-4 mono text-sm text-on-surface-variant">14</td>
+<td class="px-6 py-4"><span class="flex items-center gap-1.5 text-tertiary text-xs mono"><span class="w-2 h-2 rounded-full bg-tertiary"></span> SUCCESS</span></td>
+</tr>
+<tr class="hover:bg-surface-bright transition-colors">
+<td class="px-6 py-4 mono text-sm text-primary">#102</td>
+<td class="px-6 py-4 text-sm">common-hal</td>
+<td class="px-6 py-4"><span class="px-2 py-0.5 bg-surface-container-highest rounded-full mono text-[10px]">hal.nxp.interfaces</span></td>
+<td class="px-6 py-4 flex items-center gap-2">
+<div class="w-5 h-5 rounded-full bg-purple-900"></div>
+<span class="text-sm">a.smith</span>
+</td>
+<td class="px-6 py-4 mono text-sm text-on-surface-variant">3</td>
+<td class="px-6 py-4"><span class="flex items-center gap-1.5 text-tertiary text-xs mono"><span class="w-2 h-2 rounded-full bg-tertiary"></span> SUCCESS</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- Group: PROJ-1235 -->
+<section class="bg-surface-container-low rounded-xl overflow-hidden ring-1 ring-white/5">
+<header class="bg-surface-container px-6 py-4 flex items-center justify-between border-l-4 border-yellow-500/50">
+<div class="flex items-center gap-4">
+<span class="mono text-yellow-500 font-bold text-sm">PROJ-1235</span>
+<h3 class="text-on-surface font-semibold">CAN bus timing optimization</h3>
+</div>
+<span class="px-3 py-1 bg-yellow-500/20 text-yellow-500 text-[10px] font-bold uppercase tracking-widest rounded-full">Major</span>
+</header>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<tbody class="divide-y divide-white/5">
+<tr class="hover:bg-surface-bright transition-colors">
+<td class="px-6 py-4 mono text-sm text-primary w-[100px]">#789</td>
+<td class="px-6 py-4 text-sm w-[200px]">bus-protocol-can</td>
+<td class="px-6 py-4 w-[200px]"><span class="px-2 py-0.5 bg-surface-container-highest rounded-full mono text-[10px]">nxp.can.timing</span></td>
+<td class="px-6 py-4 flex items-center gap-2 w-[150px]">
+<div class="w-5 h-5 rounded-full bg-green-900"></div>
+<span class="text-sm">m.vance</span>
+</td>
+<td class="px-6 py-4 mono text-sm text-on-surface-variant w-[100px]">42</td>
+<td class="px-6 py-4"><span class="flex items-center gap-1.5 text-tertiary text-xs mono"><span class="w-2 h-2 rounded-full bg-tertiary"></span> SUCCESS</span></td>
+</tr>
+<tr class="hover:bg-surface-bright transition-colors">
+<td class="px-6 py-4 mono text-sm text-primary">#790</td>
+<td class="px-6 py-4 text-sm">bus-protocol-can</td>
+<td class="px-6 py-4"><span class="px-2 py-0.5 bg-surface-container-highest rounded-full mono text-[10px]">nxp.can.tests</span></td>
+<td class="px-6 py-4 flex items-center gap-2">
+<div class="w-5 h-5 rounded-full bg-orange-900"></div>
+<span class="text-sm">r.kumar</span>
+</td>
+<td class="px-6 py-4 mono text-sm text-on-surface-variant">8</td>
+<td class="px-6 py-4"><span class="flex items-center gap-1.5 text-tertiary text-xs mono"><span class="w-2 h-2 rounded-full bg-tertiary"></span> SUCCESS</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- Group: PROJ-1236 -->
+<section class="bg-surface-container-low rounded-xl overflow-hidden ring-1 ring-white/5">
+<header class="bg-surface-container px-6 py-4 flex items-center justify-between border-l-4 border-yellow-500/50">
+<div class="flex items-center gap-4">
+<span class="mono text-yellow-500 font-bold text-sm">PROJ-1236</span>
+<h3 class="text-on-surface font-semibold">DMA refactor for S32G3</h3>
+</div>
+<span class="px-3 py-1 bg-yellow-500/20 text-yellow-500 text-[10px] font-bold uppercase tracking-widest rounded-full">Major</span>
+</header>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<tbody class="divide-y divide-white/5">
+<tr class="hover:bg-surface-bright transition-colors">
+<td class="px-6 py-4 mono text-sm text-primary w-[100px]">#461</td>
+<td class="px-6 py-4 text-sm w-[200px]">dma-engine</td>
+<td class="px-6 py-4 w-[200px]"><span class="px-2 py-0.5 bg-surface-container-highest rounded-full mono text-[10px]">nxp.dma.g3</span></td>
+<td class="px-6 py-4 flex items-center gap-2 w-[150px]">
+<div class="w-5 h-5 rounded-full bg-slate-700"></div>
+<span class="text-sm">ghost-dev</span>
+</td>
+<td class="px-6 py-4 mono text-sm text-on-surface-variant w-[100px]">105</td>
+<td class="px-6 py-4"><span class="flex items-center gap-1.5 text-tertiary text-xs mono"><span class="w-2 h-2 rounded-full bg-tertiary"></span> SUCCESS</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- Group: No Jira Issue -->
+<section class="bg-surface-container-low rounded-xl overflow-hidden ring-1 ring-white/5 opacity-80">
+<header class="bg-surface-container px-6 py-4 flex items-center justify-between border-l-4 border-slate-600">
+<div class="flex items-center gap-4">
+<span class="mono text-slate-500 font-bold text-sm">No Jira Issue</span>
+<h3 class="text-slate-400 font-semibold italic text-sm">Unmapped Maintenance</h3>
+</div>
+</header>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<tbody class="divide-y divide-white/5">
+<tr class="hover:bg-surface-bright transition-colors">
+<td class="px-6 py-4 mono text-sm text-primary w-[100px]">#470</td>
+<td class="px-6 py-4 text-sm w-[200px]">docs-portal</td>
+<td class="px-6 py-4 w-[200px]"><span class="px-2 py-0.5 bg-surface-container-highest rounded-full mono text-[10px]">nxp.docs.api</span></td>
+<td class="px-6 py-4 flex items-center gap-2 w-[150px]">
+<div class="w-5 h-5 rounded-full bg-blue-500/20"></div>
+<span class="text-sm">sys-admin</span>
+</td>
+<td class="px-6 py-4 mono text-sm text-on-surface-variant w-[100px]">1</td>
+<td class="px-6 py-4"><span class="flex items-center gap-1.5 text-tertiary text-xs mono"><span class="w-2 h-2 rounded-full bg-tertiary"></span> SUCCESS</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+<!-- Package Changes Banner -->
+<div class="mt-12 mb-8 bg-surface-container-high rounded-2xl p-6 ring-1 ring-white/10 shadow-xl">
+<div class="flex items-center justify-between mb-6">
+<h2 class="text-xl font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="inventory_2">inventory_2</span>
+                        Package Delta Analysis
+                    </h2>
+<div class="px-4 py-1.5 bg-surface-container-highest rounded-lg mono text-xs text-blue-400">
+                        5 packages updated
+                    </div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Added -->
+<div class="space-y-3">
+<div class="text-[10px] uppercase tracking-[0.2em] text-tertiary-fixed-dim font-bold flex items-center gap-2 mb-2">
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim"></span>
+                            Added (2)
+                        </div>
+<div class="p-3 bg-tertiary-container/10 border border-tertiary-container/30 rounded-lg flex items-center justify-between">
+<span class="mono text-xs text-on-tertiary-container">com.nxp.s32.security</span>
+<span class="material-symbols-outlined text-sm text-tertiary">add_circle</span>
+</div>
+<div class="p-3 bg-tertiary-container/10 border border-tertiary-container/30 rounded-lg flex items-center justify-between">
+<span class="mono text-xs text-on-tertiary-container">com.nxp.s32.diagnostics</span>
+<span class="material-symbols-outlined text-sm text-tertiary">add_circle</span>
+</div>
+</div>
+<!-- Removed -->
+<div class="space-y-3">
+<div class="text-[10px] uppercase tracking-[0.2em] text-error font-bold flex items-center gap-2 mb-2">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+                            Removed (1)
+                        </div>
+<div class="p-3 bg-error-container/10 border border-error-container/30 rounded-lg flex items-center justify-between">
+<span class="mono text-xs text-on-error-container">com.nxp.s32.legacy.compat</span>
+<span class="material-symbols-outlined text-sm text-error">remove_circle</span>
+</div>
+</div>
+<!-- Updated Summary -->
+<div class="bg-surface-container-highest/40 p-4 rounded-xl flex flex-col justify-center border border-white/5">
+<div class="flex items-center gap-4 mb-4">
+<div class="text-4xl font-bold mono text-primary">05</div>
+<div class="text-[10px] uppercase text-slate-500 leading-tight">Modified<br/>Dependencies</div>
+</div>
+<div class="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[65%]"></div>
+</div>
+<div class="mt-2 text-[10px] mono text-right text-slate-500">65% manifest coverage</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+(function () {
+  const sidebarToggle = document.getElementById('sidebarToggle');
+  const sidebarToggleIcon = document.getElementById('sidebarToggleIcon');
+  if (!sidebarToggle || !sidebarToggleIcon) return;
+
+  const storageKey = 'urgp.sidebarCollapsed';
+  const applyState = (collapsed) => {
+    document.body.classList.toggle('sidebar-collapsed', collapsed);
+    sidebarToggleIcon.textContent = collapsed ? 'menu' : 'menu_open';
+    sidebarToggle.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+    sidebarToggle.setAttribute('aria-expanded', String(!collapsed));
+  };
+
+  const savedState = localStorage.getItem(storageKey);
+  applyState(savedState === '1');
+
+  sidebarToggle.addEventListener('click', () => {
+    const collapsed = !document.body.classList.contains('sidebar-collapsed');
+    applyState(collapsed);
+    localStorage.setItem(storageKey, collapsed ? '1' : '0');
+  });
+})();
+</script>
+</body></html>
+
+

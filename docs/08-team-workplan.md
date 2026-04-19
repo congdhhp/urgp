@@ -16,7 +16,7 @@ URGP replaces the fragmented Jenkins + SharePoint + Email system with a unified,
 
 | Phase | Status | Details |
 |-------|--------|---------|
-| Documentation & Design | ✅ **Complete** | 7 docs ([01](01-problem-assessment.md)–[07](07-implementation-plan.md)), 7 frontend mockups |
+| Documentation & Design | ✅ **Complete** | 9 docs ([01](01-problem-assessment.md)–[09](09-git-workflow.md)), 10 frontend mockups |
 | Source Code | ⏳ **Not Started** | Ready to begin implementation |
 | Infrastructure | ⏳ **Not Started** | Docker Compose, CI/CD, Database |
 | Testing | ⏳ **Not Started** | 40 mandatory tests defined |
@@ -230,10 +230,12 @@ URGP replaces the fragmented Jenkins + SharePoint + Email system with a unified,
 
 | Week | Focus |
 |------|-------|
-| 4 | Project setup, design system, API client (P1-6.1) |
-| 4-5 | Auth flow + Layout + Product Selection (P1-6.2, P1-6.3) |
-| 5-8 | Build Details page — What's New + Traceability Graph + Artifacts (P1-6.4) |
-| 8-9 | Build Comparison + Notification Settings (P1-6.5, P1-6.6) |
+| 4 | Project setup, design system, API client, sidebar navigation (P1-6.1) |
+| 4-5 | Auth flow + Products Catalog (P1-6.2, P1-6.3) |
+| 5-6 | Product Releases + Release Builds pages (P1-6.4) |
+| 6-8 | Build Detail pages — Packages + What's New + Traceability Graph (P1-6.5) |
+| 7-8 | Package Detail + Package CI/CD pages (P1-6.6) |
+| 8-9 | Build Comparison + Activity Feed + Notification Settings (P1-6.7, P1-6.8, P1-6.9) |
 | 10-12 | Integration testing, visual polish |
 
 ---
@@ -444,31 +446,38 @@ URGP replaces the fragmented Jenkins + SharePoint + Email system with a unified,
 
 | ID | Task | Owner | Est. | Deps | Req |
 |----|------|-------|------|------|-----|
-| P1-6.1 | React project setup (Vite + Ant Design + Router + TanStack Query + Axios) | FE-Lead | 2d | — | ADR-004 |
-| P1-6.2 | Authentication flow + layout + sidebar navigation | FE-Lead | 3d | P1-6.1 | R9.1 |
-| P1-6.3 | Product Selection + Build History table (paginated, filterable, searchable) | FE-Lead | 4d | P1-6.2 | R9.2-R9.3, R9.12 |
-| P1-6.4 | Build Details: What's New + Traceability Graph (React Flow) + Artifacts | FE-Lead | 8d | P1-6.3 | R9.4-R9.8, R9.11, R21.4 |
-| P1-6.5 | Build Comparison page (side-by-side diff, CSV/JSON export) | FE-Lead | 3d | P1-6.3 | R9.9, R21.5 |
-| P1-6.6 | Notification Settings page (subscription management UI) | FE-Lead | 2d | P1-6.2 | R8.8 |
+| P1-6.1 | React project setup (Vite + Ant Design + Router + TanStack Query + Axios + Recharts) | FE-Lead | 2d | — | ADR-004 |
+| P1-6.2 | Authentication flow + sidebar navigation (Products/Activity/Comparisons/Reports/Settings) | FE-Lead | 3d | P1-6.1 | R9.1, R9.16 |
+| P1-6.3 | Products Catalog page (KPI metrics, product cards, search) | FE-Lead | 3d | P1-6.2 | R9.2 |
+| P1-6.4 | Product Releases + Release Builds pages (hierarchy navigation, build type filters) | FE-Lead | 4d | P1-6.3 | R9.3-R9.4, R9.14 |
+| P1-6.5 | Build Detail: Packages + What's New + Traceability (React Flow) | FE-Lead | 6d | P1-6.4 | R9.5-R9.9, R9.13 |
+| P1-6.6 | Package Detail + Package CI/CD & Testing pages | FE-Lead | 4d | P1-6.5 | R9.11 |
+| P1-6.7 | Build Comparison pages (Issues + PRs + Packages tabs, CSV/JSON export) | FE-Lead | 3d | P1-6.4 | R9.10 |
+| P1-6.8 | Activity Feed page (live metrics, active builds, alerts, heatmap) | FE-Lead | 3d | P1-6.2 | R9.15 |
+| P1-6.9 | Notification Settings page (subscription management UI) | FE-Lead | 2d | P1-6.2 | R8.8 |
 
 **Tests:**
 
 | ID | Test | Owner | Est. |
 |----|------|-------|------|
-| P1-6.T1 | Integration: login → product selection → build history navigation | QA + FE | 0.5d |
-| P1-6.T2 | Integration: build details page renders traceability data correctly | QA + FE | 0.5d |
-| P1-6.T3 | Integration: build comparison page shows correct diff | QA + FE | 0.5d |
+| P1-6.T1 | Integration: login → products catalog → release selection → build list navigation | QA + FE | 0.5d |
+| P1-6.T2 | Integration: build detail pages render packages and traceability data correctly | QA + FE | 0.5d |
+| P1-6.T3 | Integration: build comparison page shows correct diff across Issues/PRs/Packages | QA + FE | 0.5d |
 | P1-6.T4 | Performance: manifest page renders < 1 second (50 artifacts) | QA + FE | 0.5d |
 | P1-6.T5 | Performance: traceability graph renders < 3 seconds (100 commits) | QA + FE | 0.5d |
+| P1-6.T6 | Integration: activity feed displays live metrics from multiple products | QA + FE | 0.5d |
 
 **Portal Definition of Done:**
-- [ ] All 6 pages functional and connected to APIs
-- [ ] Build history: paginated, filterable by train/status/date, searchable
-- [ ] What's New: shows issues with PRs grouped by repository
-- [ ] Traceability Graph: interactive pan/zoom/click with React Flow
-- [ ] Build Comparison: accurate diff with export functionality
+- [ ] All 10 pages functional and connected to APIs
+- [ ] Products catalog: KPI metrics, product cards with release/build stats
+- [ ] Product → Release → Build navigation hierarchy works end-to-end
+- [ ] Build detail: packages list with downloads, What's New with issues/PRs, Traceability Graph
+- [ ] Package detail and CI/CD pages with drill-down from build
+- [ ] Build Comparison: accurate diff across Issues/PRs/Packages with export functionality
+- [ ] Activity Feed: live metrics, active builds, alerts, heatmap
+- [ ] Sidebar navigation: Products, Activity, Comparisons, Reports, Settings
 - [ ] Consistent "Command Horizon" design system (see `/frontend/designs/`)
-- [ ] All 5 tests pass
+- [ ] All 6 tests pass
 
 ---
 

@@ -48,11 +48,13 @@ This design document translates the [requirements](04-requirements.md) into conc
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │ Layer 5: Self-Service Portal (React + TypeScript)                   │
-│ ┌────────────┬────────────┬──────────────┬───────────────────────┐  │
-│ │ Build      │ What's New │ Traceability  │ Build Comparison     │  │
-│ │ History    │ Table      │ Graph (React  │ (Diff View)          │  │
-│ │ (Ant Table)│            │  Flow)        │                      │  │
-│ └────────────┴────────────┴──────────────┴───────────────────────┘  │
+│ ┌──────────┬──────────┬──────────┬───────────┬──────────────────┐  │
+│ │ Products │ Releases │ Builds   │ Build     │ Build            │  │
+│ │ Catalog  │ List     │ List     │ Details   │ Comparison       │  │
+│ ├──────────┼──────────┼──────────┼───────────┼──────────────────┤  │
+│ │ Activity │ Package  │ Package  │ What's New│ Traceability     │  │
+│ │ Feed     │ Detail   │ CI/CD    │ Table     │ Graph (React Flow│  │
+│ └──────────┴──────────┴──────────┴───────────┴──────────────────┘  │
 └─────────────────────────────────────────────────────────────────────┘
                               ▲
                               │ HTTPS/REST (TanStack Query)
@@ -109,15 +111,17 @@ This design document translates the [requirements](04-requirements.md) into conc
 
 ```
 ┌──────────────┐     1:N     ┌──────────────┐     1:N     ┌───────────────┐
-│   tenants    │────────────▶│   products   │────────────▶│ release_trains│
+│   tenants    │────────────▶│   products   │────────────▶│   releases    │
 │              │             │              │             │               │
 │ id (PK)      │             │ id (PK)      │             │ id (PK)       │
 │ name         │             │ tenant_id(FK)│             │ product_id(FK)│
-│ namespace    │             │ name         │             │ name          │
-│ created_at   │             │ git_config   │             │ created_at    │
-│ updated_at   │             │ issue_config │             └───────────────┘
-└──────────────┘             │ created_at   │                    │
-                             └──────────────┘                    │ 1:N
+│ namespace    │             │ name         │             │ version       │
+│ created_at   │             │ git_config   │             │ release_type  │
+│ updated_at   │             │ issue_config │             │ status        │
+│              │             │ created_at   │             │ created_at    │
+└──────────────┘             └──────────────┘             └───────────────┘
+                                                                 │
+                                                                 │ 1:N
                                                                  ▼
                                                     ┌──────────────────────┐
                                                     │   build_manifests    │
@@ -125,7 +129,8 @@ This design document translates the [requirements](04-requirements.md) into conc
                                                     │ id (PK)              │
                                                     │ build_id (unique)    │
                                                     │ product_id (FK)      │
-                                                    │ release_train_id(FK) │
+                                                    │ release_id (FK)      │
+                                                    │ build_type (enum)    │
                                                     │ status (enum)        │
                                                     │ traceability_incomplete│
                                                     │ sbom_reference       │
@@ -192,7 +197,7 @@ This design document translates the [requirements](04-requirements.md) into conc
                              │ id (PK)          │          │ id (PK)              │
                              │ timestamp        │          │ user_id              │
                              │ user_id          │          │ product_id (FK)      │
-                             │ operation_type   │          │ release_train_id(FK) │
+                             │ operation_type   │          │ release_id (FK)      │
                              │ resource_type    │          │ channel (enum)       │
                              │ resource_id      │          │ webhook_url          │
                              │ change_details   │          │ active               │
@@ -226,6 +231,13 @@ CREATE TYPE artifact_type AS ENUM (
 CREATE TYPE notification_channel AS ENUM (
     'email',
     'webhook'
+);
+
+CREATE TYPE build_type AS ENUM (
+    'nightly',
+    'weekly',
+    'rc',
+    'hotfix'
 );
 
 CREATE TYPE user_role AS ENUM (
@@ -293,7 +305,8 @@ The CLI is a single-binary tool (compiled via PyInstaller or Nuitka) that CI/CD 
 # Primary command: push build data to URGP
 urgp-cli push \
   --product "S32_IDE" \
-  --release-train "nightly" \
+  --release "3.6.8-RFP" \
+  --build-type "nightly" \
   --build-id "260330" \
   --adapter "eclipse_p2" \
   --artifact "./target/s32-ide.zip" \
@@ -365,10 +378,11 @@ class EclipseP2Adapter(BaseAdapter):
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "required": ["product_id", "release_train", "build_id", "commit_hashes", "artifacts", "timestamp", "cli_version"],
+  "required": ["product_id", "release", "build_type", "build_id", "commit_hashes", "artifacts", "timestamp", "cli_version"],
   "properties": {
     "product_id": {"type": "string"},
-    "release_train": {"type": "string"},
+    "release": {"type": "string"},
+    "build_type": {"type": "string", "enum": ["nightly", "weekly", "rc", "hotfix"]},
     "build_id": {"type": "string"},
     "cli_version": {"type": "string", "description": "CLI and data contract version for compatibility tracking"},
     "commit_hashes": {
@@ -691,7 +705,7 @@ class NotificationEngine:
     async def on_build_completed(self, manifest: BuildManifest):
         subscriptions = await self.get_subscriptions(
             product_id=manifest.product_id,
-            release_train_id=manifest.release_train_id
+            release_id=manifest.release_id
         )
         
         for sub in subscriptions:
@@ -706,7 +720,8 @@ class NotificationEngine:
         return {
             "build_id": manifest.build_id,
             "product": manifest.product.name,
-            "release_train": manifest.release_train.name,
+            "release": manifest.release.version,
+            "build_type": manifest.build_type,
             "status": manifest.status,
             "changes_summary": {
                 "commits": len(manifest.commits),
@@ -768,54 +783,89 @@ MCP_TOOL_MAPPING = {
 ### Page Structure
 
 ```
-/login                          → Login page (OIDC redirect)
-/products                       → Product selection (home)
-/products/:id/builds            → Build history table
-/products/:id/builds/:buildId   → Build details (traceability + what's new)
-/builds/compare                 → Build comparison (side-by-side diff)
-/settings/notifications         → Notification subscription management
-/settings/profile               → User profile
-/admin/products (P2)            → Product administration
-/admin/tenants (P2)             → Tenant administration
+/login                                        → Login page (OIDC redirect)
+/products                                     → Products catalog with platform KPIs (home)
+/products/:id/releases                        → Product releases list
+/products/:id/releases/:releaseId/builds      → Release builds list (filterable by build type)
+/products/:id/releases/:releaseId/builds/:buildId
+                                              → Build detail (packages, what's new, traceability)
+/products/:id/releases/:releaseId/builds/:buildId/packages/:packageId
+                                              → Package detail (source & changes)
+/products/:id/releases/:releaseId/builds/:buildId/packages/:packageId/cicd
+                                              → Package CI/CD & testing
+/builds/compare                               → Build comparison — Issues view
+/builds/compare/prs                           → Build comparison — PRs & Packages view
+/activity                                     → Cross-product activity feed & monitoring
+/settings/notifications                       → Notification subscription management
+/settings/profile                             → User profile
+/admin/products (P2)                          → Product administration
+/admin/tenants (P2)                           → Tenant administration
+```
+
+**Sidebar Navigation:**
+```
+┌──────────────────────────┐
+│  COMMAND HORIZON         │
+├──────────────────────────┤
+│  🏢 Products      (home) │
+│  📊 Activity             │
+│  🔀 Comparisons          │
+│  📈 Reports              │
+│  ⚙️  Settings             │
+└──────────────────────────┘
 ```
 
 ### Key UI Components
 
-**Build History Table (Ant Design Table):**
+**Products Catalog** (see [00-products.html](../frontend/designs/00-products.html)):
+- Platform-wide KPI metrics (total builds, success rate, active products, avg build time)
+- Product cards showing release count, build count, last build status per product
+- Search and filter capabilities
+
+**Product Releases List** (see [01-product-releases.html](../frontend/designs/01-product-releases.html)):
+- Release cards with version, release type, lifecycle status (Active/Maintenance/EOL)
+- Summary stats per release: build count, success rate, package count
+
+**Release Builds List** (see [02-release-builds.html](../frontend/designs/02-release-builds.html)):
 ```
 ┌────────────┬───────────┬──────────┬────────┬─────────┬──────────┐
-│ Build ID   │ Train     │ Status   │Changes │ Date    │ Actions  │
+│ Build ID   │ Type      │ Status   │Changes │ Date    │ Actions  │
 ├────────────┼───────────┼──────────┼────────┼─────────┼──────────┤
 │ 260330     │ Nightly   │ 🟢 Released│ 15    │ 03/30   │ View     │
 │ 260329     │ Nightly   │ 🟡 Testing │ 8     │ 03/29   │ View     │
 │ 260328     │ Nightly   │ ⚪ Completed│ 22    │ 03/28   │ View     │
 │ 260325     │ Weekly    │ 🟢 Released│ 45    │ 03/25   │ View     │
 └────────────┴───────────┴──────────┴────────┴─────────┴──────────┘
-  [Filter: Train ▼] [Filter: Status ▼] [Date range: __|__]  [Search: ____]
+  [Filter: Build Type ▼] [Filter: Status ▼] [Date range: __|__]  [Search: ____]
   [Compare builds: select 2 rows → Compare button]
 ```
 
-**Build Details Page:**
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│  Build 260330  │  Nightly  │  🟢 Released  │  03/30/2026 02:30 UTC │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  [Tab: What's New] [Tab: Traceability Graph] [Tab: Artifacts]       │
-│                                                                     │
-│  ┌──── What's New ──────────────────────────────────────────────┐   │
-│  │ Issue       │ Title                     │ Priority │ Status  │   │
-│  ├─────────────┼───────────────────────────┼──────────┼─────────│   │
-│  │ PROJ-1234 ↗ │ Fix GPIO driver init      │ Critical │ Done    │   │
-│  │ → PR #456 ↗ │ in repo: s32k3_drivers    │          │         │   │
-│  │ PROJ-1235 ↗ │ Update CAN bus timing     │ Major    │ Done    │   │
-│  │ → PR #789 ↗ │ in repo: s32k3_dev        │          │         │   │
-│  │ → PR #790 ↗ │ in repo: s32k3_hal        │          │         │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-│  15 commits across 3 repositories │ 8 Pull Requests │ 5 Issues     │
-└─────────────────────────────────────────────────────────────────────┘
-```
+**Build Detail — Packages** (see [03-build-detail-packages.html](../frontend/designs/03-build-detail-packages.html)):
+- Build header with status badge, build type, timestamps
+- Package (artifact) list with name, type, version, size, download actions
+- `docker pull` command for OCI images
+
+**Build Detail — What's New & Traceability** (see [08-build-detail-whatsnew-traceability.html](../frontend/designs/08-build-detail-whatsnew-traceability.html)):
+- What's New: Issues with PRs grouped by repository
+- Traceability Graph: Interactive React Flow visualization
+- Summary: commit/PR/issue counts across repositories
+
+**Package Detail** (see [04-package-detail.html](../frontend/designs/04-package-detail.html)):
+- Source repository and branch info
+- Recent changes (commits, PRs) affecting the package
+
+**Package CI/CD & Testing** (see [06-package-cicd-testing.html](../frontend/designs/06-package-cicd-testing.html)):
+- CI/CD pipeline status and history
+- Test results summary and detail
+
+**Build Comparison** (see [05-build-comparison-issues.html](../frontend/designs/05-build-comparison-issues.html), [07-build-comparison-prs-packages.html](../frontend/designs/07-build-comparison-prs-packages.html)):
+- Two-column diff layout with Issues, PRs, and Packages tabs
+- Export: CSV, JSON
+
+**Activity Feed** (see [09-activity.html](../frontend/designs/09-activity.html)):
+- Live build metrics and active build status across all products
+- System alerts and notifications
+- Build activity heatmap
 
 **Traceability Graph (React Flow):**
 ```
@@ -830,7 +880,7 @@ MCP_TOOL_MAPPING = {
        │          └──────────┘     └──────────┘     └─────────┘
        │
   ┌──────────┐
-  │ Artifact │
+  │ Package  │
   │ s32k3.zip│
   │ SHA:abc..│
   └──────────┘
@@ -1009,9 +1059,16 @@ urgp/
 │   │   ├── api/                     # API client (Axios + TanStack Query hooks)
 │   │   ├── components/              # Shared UI components
 │   │   ├── pages/                   # Page components
-│   │   │   ├── BuildHistory.tsx
-│   │   │   ├── BuildDetails.tsx
-│   │   │   ├── BuildComparison.tsx
+│   │   │   ├── ProductsCatalog.tsx
+│   │   │   ├── ProductReleases.tsx
+│   │   │   ├── ReleaseBuilds.tsx
+│   │   │   ├── BuildDetailPackages.tsx
+│   │   │   ├── BuildDetailWhatsNew.tsx
+│   │   │   ├── PackageDetail.tsx
+│   │   │   ├── PackageCicd.tsx
+│   │   │   ├── BuildComparisonIssues.tsx
+│   │   │   ├── BuildComparisonPrs.tsx
+│   │   │   ├── ActivityFeed.tsx
 │   │   │   └── NotificationSettings.tsx
 │   │   └── types/                   # TypeScript interfaces
 │   └── public/

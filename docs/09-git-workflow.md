@@ -70,7 +70,7 @@ C:\Users\congd\Desktop\works\
 | `p1-3-event-gateway/` | `feature/p1-3-event-gateway` | BE-1 | Ingestion API, validation, DLQ, rate limiting |
 | `p1-4-control-plane/` | `feature/p1-4-control-plane` | TL-BE, BE-1, BE-2 | Manifest, Hydrator, APIs, Lifecycle |
 | `p1-5-notifications/` | `feature/p1-5-notifications` | BE-2 | Email + webhook notifications |
-| `p1-6-portal/` | `feature/p1-6-portal` | FE-Lead | React Portal — all 6 pages |
+| `p1-6-portal/` | `feature/p1-6-portal` | FE-Lead | React Portal — all 10 pages |
 
 ---
 

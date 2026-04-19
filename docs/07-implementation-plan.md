@@ -376,75 +376,107 @@ This implementation plan breaks down the URGP platform into **3 delivery phases*
 
 ### P1-6: Self-Service Portal (Frontend) `[Week 4-10]`
 
-> **Note**: Frontend development can begin in Week 4 once API contracts are defined in P1-3. Use API mocking (MSW or similar) to proceed independently of backend completion.
+> **Note**: Frontend development can begin in Week 4 once API contracts are defined in P1-3. Use API mocking (MSW or similar) to proceed independently of backend completion. Reference `/frontend/designs/` for all 10 UI mockups.
 
 - [ ] P1-6.1 Initialize React project
   - Set up Vite + React + TypeScript
-  - Install and configure: Ant Design, React Router v6, TanStack Query, Axios, React Flow
+  - Install and configure: Ant Design, React Router v6, TanStack Query, Axios, React Flow, Recharts
   - Set up ESLint + Prettier
   - Create API client module with interceptors (JWT injection, error handling, retry)
-  - **Deliverable:** `npm run dev` starts dev server, renders blank app
+  - Implement "Command Horizon" design system (dark theme, MD3, Tailwind CSS)
+  - **Deliverable:** `npm run dev` starts dev server, renders blank app with sidebar navigation
   - _ADR-004_
 
-- [ ] P1-6.2 Implement authentication flow
+- [ ] P1-6.2 Implement authentication flow & sidebar navigation
   - Login page with JWT authentication (username/password for P1, OIDC in P2)
   - Store JWT in httpOnly cookie or localStorage
   - Protected routes: redirect to login if unauthenticated
-  - Navigation layout: top bar with product selector, user menu
-  - **Deliverable:** User can login and see authenticated layout
-  - _Requirements: R9.1_
+  - Sidebar navigation layout with sections: Products, Activity, Comparisons, Reports, Settings
+  - Sidebar collapse/expand with localStorage persistence
+  - Fixed header (64px) with breadcrumb navigation
+  - **Deliverable:** User can login and see authenticated layout with sidebar
+  - _Requirements: R9.1, R9.16_
+  - _Design: [00-products.html](../frontend/designs/00-products.html) (sidebar reference)_
 
-- [ ] P1-6.3 Implement Product Selection & Build History page
-  - Product dropdown (populated from `GET /api/v1/products`)
-  - Build history table using Ant Design Table with:
-    - Columns: Build ID, Release Train, Status (color-coded badge), Changes count, Date, Actions
+- [ ] P1-6.3 Implement Products Catalog page
+  - Products catalog with platform-wide KPI metrics (total builds, success rate, active products, avg build time)
+  - Product cards showing release count, build count, last build status per product
+  - Search and filter capabilities
+  - **Deliverable:** Products catalog matches [00-products.html](../frontend/designs/00-products.html)
+  - _Requirements: R9.2_
+
+- [ ] P1-6.4 Implement Product Releases & Release Builds pages
+  - **Product Releases page:**
+    - Release cards with version, release type, lifecycle status (Active/Maintenance/EOL)
+    - Summary stats per release: build count, success rate, package count
+  - **Release Builds page:**
+    - Build list table with columns: Build ID, Build Type, Status (color-coded badge), Changes count, Date, Actions
     - Pagination (server-side, 20 per page)
-    - Filters: Release Train (dropdown), Status (dropdown), Date range (date picker)
+    - Filters: Build Type (Nightly/Weekly/RC/Hotfix dropdown), Status (dropdown), Date range (date picker)
     - Search: by build_id, commit hash, issue ID
-  - Row selection for build comparison (select 2 → Compare button)
-  - **Deliverable:** Build history view matches [05-technical-design.md wireframe](05-technical-design.md#build-history-table-ant-design-table)
-  - _Requirements: R9.2, R9.3, R9.12_
+    - Row selection for build comparison (select 2 → Compare button)
+  - **Deliverable:** Navigation flow: Products → Releases → Builds
+  - _Requirements: R9.3, R9.4, R9.14_
+  - _Design: [01-product-releases.html](../frontend/designs/01-product-releases.html), [02-release-builds.html](../frontend/designs/02-release-builds.html)_
 
-- [ ] P1-6.4 Implement Build Details page
-  - Tab layout: **What's New** | **Traceability Graph** | **Artifacts**
-  - **What's New tab:**
-    - Table of Issues with: Issue ID (click → Jira link), Title, Priority, Status
-    - Sub-rows for associated Pull Requests with repo name (click → PR link)
-    - Group by repository for multi-repo builds
-  - **Traceability Graph tab:**
-    - Interactive graph using React Flow
-    - Node types: Build (blue), Commit (gray), PR (green), Issue (orange), Artifact (purple)
-    - Click node → side panel with details
-    - Pan, zoom, minimap
-  - **Artifacts tab:**
-    - Table of artifacts with: Name, Type, SHA-256 (truncated), Size, Download action
-    - Download button for binary artifacts
-    - `docker pull` command display for OCI images
+- [ ] P1-6.5 Implement Build Detail pages
+  - **Build Detail — Packages** (main view):
+    - Build header with status badge, build type, timestamps
+    - Package (artifact) list with name, type, version, size, download actions
+    - `docker pull` command for OCI images
+  - **Build Detail — What's New & Traceability:**
+    - What's New: Issues with PRs grouped by repository
+    - Traceability Graph: Interactive React Flow visualization
+    - Node types: Build (blue), Commit (gray), PR (green), Issue (orange), Package (purple)
+    - Click node → side panel with details; Pan, zoom, minimap
+    - Summary: commit/PR/issue counts across repositories
   - Lifecycle status badge (colored) in page header
-  - **Deliverable:** Build details page renders all traceability data
-  - _Requirements: R9.4, R9.5, R9.6, R9.7, R9.8, R9.11, R21.4_
+  - **Deliverable:** Build detail pages render all traceability data and packages
+  - _Requirements: R9.5, R9.6, R9.7, R9.8, R9.9, R9.13_
+  - _Design: [03-build-detail-packages.html](../frontend/designs/03-build-detail-packages.html), [08-build-detail-whatsnew-traceability.html](../frontend/designs/08-build-detail-whatsnew-traceability.html)_
 
-- [ ] P1-6.5 Implement Build Comparison page
+- [ ] P1-6.6 Implement Package Detail & CI/CD pages
+  - **Package Detail page:**
+    - Source repository and branch info
+    - Recent changes (commits, PRs) affecting the package
+  - **Package CI/CD & Testing page:**
+    - CI/CD pipeline status and history
+    - Test results summary and detail
+  - **Deliverable:** Full drill-down from Build → Package → CI/CD
+  - _Requirements: R9.11_
+  - _Design: [04-package-detail.html](../frontend/designs/04-package-detail.html), [06-package-cicd-testing.html](../frontend/designs/06-package-cicd-testing.html)_
+
+- [ ] P1-6.7 Implement Build Comparison pages
   - Two-column layout showing differential changes between builds
-  - Deduplicated list of: New commits, New PRs, New Issues
-  - Summary statistics (counts)
+  - Tab views: Issues diff, PRs diff, Packages diff
+  - Deduplicated lists with summary statistics (counts)
   - Export buttons: CSV, JSON
-  - **Deliverable:** QA can compare any two builds and export results
-  - _Requirements: R9.9, R21.5_
+  - **Deliverable:** QA can compare any two builds across Issues/PRs/Packages and export results
+  - _Requirements: R9.10_
+  - _Design: [05-build-comparison-issues.html](../frontend/designs/05-build-comparison-issues.html), [07-build-comparison-prs-packages.html](../frontend/designs/07-build-comparison-prs-packages.html)_
 
-- [ ] P1-6.6 Implement Notification Settings page
+- [ ] P1-6.8 Implement Activity Feed page
+  - Live build metrics and active build status across all products
+  - System alerts and notifications
+  - Build activity heatmap (per product, time-based)
+  - **Deliverable:** Cross-product monitoring dashboard functional
+  - _Requirements: R9.15_
+  - _Design: [09-activity.html](../frontend/designs/09-activity.html)_
+
+- [ ] P1-6.9 Implement Notification Settings page
   - List of user's notification subscriptions
-  - Create subscription form: Product (dropdown), Release Train (dropdown), Channel (email/webhook), Webhook URL (if webhook)
+  - Create subscription form: Product (dropdown), Release (dropdown), Channel (email/webhook), Webhook URL (if webhook)
   - Delete subscription button
   - **Deliverable:** Users manage their notification preferences via UI
   - _Requirements: R8.8_
 
 **P1-6 Tests (MANDATORY):**
-- [ ] P1-6.T1 Integration test: login → product selection → build history navigation
-- [ ] P1-6.T2 Integration test: build details page renders traceability data correctly
-- [ ] P1-6.T3 Integration test: build comparison page shows correct diff
+- [ ] P1-6.T1 Integration test: login → products catalog → release selection → build list navigation
+- [ ] P1-6.T2 Integration test: build detail pages render packages and traceability data correctly
+- [ ] P1-6.T3 Integration test: build comparison page shows correct diff across Issues/PRs/Packages
 - [ ] P1-6.T4 Performance test: build manifest page renders < 1 second (50 artifacts)
 - [ ] P1-6.T5 Performance test: traceability graph renders < 3 seconds (100 commits)
+- [ ] P1-6.T6 Integration test: activity feed displays live metrics from multiple products
 
 ---
 

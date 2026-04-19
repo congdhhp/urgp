@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Command Horizon | Package Detail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "outline-variant": "#434655",
+                        "on-tertiary-container": "#d7f6ff",
+                        "surface-dim": "#0b1326",
+                        "surface-container-high": "#222a3d",
+                        "secondary-fixed": "#d8e3fb",
+                        "on-tertiary-fixed-variant": "#004e5c",
+                        "on-secondary-fixed-variant": "#3c475a",
+                        "inverse-surface": "#dae2fd",
+                        "on-surface-variant": "#c3c6d7",
+                        "surface-container-highest": "#2d3449",
+                        "secondary": "#bcc7de",
+                        "secondary-container": "#3e495d",
+                        "outline": "#8d90a0",
+                        "surface-variant": "#2d3449",
+                        "on-primary-container": "#eeefff",
+                        "primary-container": "#2563eb",
+                        "tertiary-fixed-dim": "#4cd7f6",
+                        "surface": "#0b1326",
+                        "error": "#ffb4ab",
+                        "on-primary": "#002a78",
+                        "surface-container-low": "#131b2e",
+                        "on-primary-fixed": "#00174b",
+                        "on-secondary-container": "#aeb9d0",
+                        "inverse-on-surface": "#283044",
+                        "on-tertiary-fixed": "#001f26",
+                        "surface-container": "#171f33",
+                        "on-tertiary": "#003640",
+                        "surface-container-lowest": "#060e20",
+                        "surface-tint": "#b4c5ff",
+                        "tertiary-fixed": "#acedff",
+                        "error-container": "#93000a",
+                        "background": "#0b1326",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "tertiary": "#4cd7f6",
+                        "tertiary-container": "#00788c",
+                        "on-background": "#dae2fd",
+                        "surface-bright": "#31394d",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-fixed": "#111c2d",
+                        "inverse-primary": "#0053db",
+                        "secondary-fixed-dim": "#bcc7de",
+                        "primary-fixed": "#dbe1ff",
+                        "on-secondary": "#263143",
+                        "primary": "#b4c5ff",
+                        "on-surface": "#dae2fd",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-error": "#690005"
+                    },
+                    fontFamily: {
+                        headline: ["Inter", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                        label: ["JetBrains Mono", "monospace"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0b1326; }
+        ::-webkit-scrollbar-thumb { background: #222a3d; border-radius: 10px; }
+        .glass-card { background: rgba(30, 41, 59, 0.5); backdrop-filter: blur(12px); }
+            @media (min-width: 768px) {
+            :root {
+                --sidebar-expanded-width: 16rem;
+                --sidebar-collapsed-width: 5rem;
+            }
+            .js-sidebar {
+                width: var(--sidebar-expanded-width);
+                overflow: hidden;
+                transition: width 220ms ease;
+            }
+            .js-offset-left {
+                transition: left 220ms ease;
+            }
+            .js-offset-margin {
+                transition: margin-left 220ms ease;
+            }
+            .js-offset-padding {
+                transition: padding-left 220ms ease;
+            }
+            .js-offset-width {
+                transition: width 220ms ease;
+            }
+            body.sidebar-collapsed .js-sidebar {
+                width: var(--sidebar-collapsed-width);
+            }
+            body.sidebar-collapsed .js-offset-left {
+                left: var(--sidebar-collapsed-width) !important;
+            }
+            body.sidebar-collapsed .js-offset-margin {
+                margin-left: var(--sidebar-collapsed-width) !important;
+            }
+            body.sidebar-collapsed .js-offset-padding {
+                padding-left: var(--sidebar-collapsed-width) !important;
+            }
+            body.sidebar-collapsed .js-offset-width {
+                width: calc(100% - var(--sidebar-collapsed-width)) !important;
+            }
+            body.sidebar-collapsed .js-sidebar .js-sidebar-brand {
+                justify-content: center;
+                padding-left: 0;
+                padding-right: 0;
+            }
+            body.sidebar-collapsed .js-sidebar .js-sidebar-meta {
+                display: none;
+            }
+            body.sidebar-collapsed .js-sidebar nav a,
+            body.sidebar-collapsed .js-sidebar .mt-auto a {
+                justify-content: center;
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+            }
+            body.sidebar-collapsed .js-sidebar nav a span:not(.material-symbols-outlined),
+            body.sidebar-collapsed .js-sidebar .mt-auto a span:not(.material-symbols-outlined) {
+                display: none;
+            }
+            body.sidebar-collapsed .js-sidebar .js-sidebar-primary-btn {
+                width: 2.5rem;
+                height: 2.5rem;
+                margin-left: auto;
+                margin-right: auto;
+                padding: 0;
+                justify-content: center;
+            }
+            body.sidebar-collapsed .js-sidebar .js-sidebar-primary-btn .js-sidebar-label {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface flex flex-col min-h-screen selection:bg-primary/30">
+<!-- Sidebar Shell -->
+<aside class="js-sidebar fixed left-0 top-0 h-screen w-64 bg-[#131b2e] border-r border-[#434655]/20 z-[60] hidden md:flex flex-col pt-20 pb-6 px-4">
+<div class="js-sidebar-brand flex items-center gap-3 mb-8 px-4">
+<div class="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container">rocket_launch</span>
+</div>
+<div class="js-sidebar-meta">
+<h3 class="font-bold text-on-surface leading-tight">Mission Control</h3>
+<p class="text-xs text-on-surface/50 mono">Operator 01</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="bg-[#222a3d] text-[#dae2fd] rounded-lg px-4 py-3 flex items-center gap-3" href="00-products.html">
+<span class="material-symbols-outlined text-[#2563eb]">apps</span>
+<span class="font-medium text-sm tracking-wide">Products</span>
+</a>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">construction</span>
+<span class="font-medium text-sm tracking-wide">Builds</span>
+</a>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-medium text-sm tracking-wide">Packages</span>
+</a>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">compare_arrows</span>
+<span class="font-medium text-sm tracking-wide">Comparisons</span>
+</a>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-medium text-sm tracking-wide">Settings</span>
+</a>
+</nav>
+<div class="mt-auto space-y-1">
+<button class="js-sidebar-primary-btn w-full mb-6 py-3 px-4 bg-primary-container text-on-primary-container rounded-lg font-bold text-sm active:scale-95 duration-200 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-base">add_circle</span>
+<span class="js-sidebar-label">New Build</span>
+</button>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-medium text-sm tracking-wide">Support</span>
+</a>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg" href="#">
+<span class="material-symbols-outlined">code</span>
+<span class="font-medium text-sm tracking-wide">API</span>
+</a>
+</div>
+</aside>
+<!-- Top Bar Shell -->
+<header class="js-offset-left fixed top-0 left-0 right-0 md:left-64 z-50 bg-[#131b2e]/80 backdrop-blur-xl border-b border-[#434655]/20 flex justify-between items-center px-6 h-16">
+<div class="flex items-center gap-8">
+<button aria-label="Collapse sidebar" class="hidden md:inline-flex w-9 h-9 items-center justify-center rounded-lg border border-outline-variant/20 text-on-surface/70 hover:text-on-surface hover:bg-surface-container-high transition-colors" id="sidebarToggle" type="button">
+<span class="material-symbols-outlined text-lg" id="sidebarToggleIcon">menu_open</span>
+</button>
+<span class="text-xl font-black text-[#dae2fd] tracking-tight">Command Horizon</span>
+<div class="hidden lg:flex items-center gap-2 bg-[#222a3d] px-3 py-1.5 rounded-lg border border-outline-variant/20">
+<span class="material-symbols-outlined text-sm text-on-surface/40">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm text-on-surface placeholder:text-on-surface/30 w-64 mono" placeholder="Search builds or assets..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden md:flex items-center gap-4 border-r border-outline-variant/20 pr-6">
+<a class="text-[#dae2fd]/60 font-medium text-sm hover:text-[#2563eb]" href="#">Release Hub</a>
+<a class="text-[#dae2fd]/60 font-medium text-sm hover:text-[#2563eb]" href="#">Audit Logs</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative text-[#dae2fd]/60 hover:text-[#dae2fd]">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="text-[#dae2fd]/60 hover:text-[#dae2fd]">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="hidden sm:flex items-center gap-3 ml-2">
+<div class="text-right">
+<p class="text-xs font-bold">S32 Design Studio</p>
+<p class="text-[10px] text-on-surface/50 mono">BUILD_MASTER_X</p>
+</div>
+<img class="w-8 h-8 rounded-lg object-cover ring-2 ring-[#2563eb]/20" data-alt="Portrait of a male professional systems operator in a modern tech environment with blue atmospheric lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPS6zF3cGrLpka_Jr7mD89_ZdVXAVmB3C8rdDiw2p31yvfu427O278Hy1zcJ9Bqxv9pw8X_-jVOpgBhX2zEyRtRcpdWnzwlx_J75_RSLX6qLFFFK8Iv0jMiypUsVALZaNdzKvcyP3lKv9tJqvxdSSdFjrHb80JrTjIZ0-V6yAJcye4KfxLxv9fLpDcYsfrkaf7fKoJ01opp_gzMaC4cKb35MqrN0LG58YTbxYPItmy7Mic2fdN7tOBVIHmlQ6QR6QdSZ5wyG16xfHg"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="js-offset-margin flex-1 md:ml-64 pt-16 min-h-screen">
+<!-- Breadcrumb & Header -->
+<div class="px-8 pt-8">
+<nav class="flex items-center gap-2 text-[10px] font-label text-outline uppercase tracking-widest mb-4">
+<a class="hover:text-primary transition-colors" href="00-products.html">Products</a>
+<span class="material-symbols-outlined text-[12px]">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="01-product-releases.html">S32 Design Studio</a>
+<span class="material-symbols-outlined text-[12px]">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="02-release-builds.html">S32 DS 3.6.8 RFP</a>
+<span class="material-symbols-outlined text-[12px]">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="03-build-detail-packages.html">Build #260330</a>
+<span class="material-symbols-outlined text-[12px]">chevron_right</span>
+<span class="text-on-surface">com.nxp.s32.ide.core</span>
+</nav>
+<section class="bg-surface-container-low p-8 rounded-xl border border-outline-variant/10 mb-8 shadow-inner">
+<div class="flex flex-col lg:flex-row justify-between gap-8">
+<div class="flex items-start gap-6">
+<div class="w-16 h-16 bg-surface-container-highest rounded-2xl flex items-center justify-center border border-outline-variant/20 shadow-xl">
+<span class="text-3xl">PKG</span>
+</div>
+<div>
+<h1 class="text-3xl font-label font-bold text-on-surface mb-3 tracking-tight">com.nxp.s32.ide.core</h1>
+<div class="flex flex-wrap items-center gap-3">
+<span class="px-2.5 py-0.5 bg-primary-container/20 text-primary border border-primary/30 rounded-full text-[10px] font-bold uppercase tracking-wider">Eclipse P2</span>
+<div class="flex items-center gap-2 text-outline">
+<span class="material-symbols-outlined text-sm">upgrade</span>
+<span class="text-sm font-label">3.8.0.20260330</span>
+</div>
+<div class="w-1 h-1 bg-outline-variant/40 rounded-full"></div>
+<div class="flex items-center gap-2 text-outline">
+<span class="material-symbols-outlined text-sm">database</span>
+<span class="text-sm font-label">142 MB</span>
+</div>
+<div class="w-1 h-1 bg-outline-variant/40 rounded-full"></div>
+<a class="flex items-center gap-2 text-blue-400 hover:underline" href="#">
+<span class="material-symbols-outlined text-sm">link</span>
+<span class="text-sm font-label">Build #260330</span>
+</a>
+</div>
+<div class="mt-4 flex items-center gap-3 p-2 bg-surface-container-lowest rounded-lg border border-outline-variant/10 w-fit">
+<span class="text-[10px] font-label text-outline uppercase tracking-widest px-2 border-r border-outline-variant/20">SHA-256</span>
+<code class="text-xs font-label text-secondary px-2 truncate max-w-[300px]">a1b2c3d4e5f67890abcdef1234567890abcdef1234567890abcdef1234567890</code>
+<button class="p-1 hover:bg-surface-container-high rounded text-outline hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+</div>
+</div>
+</div>
+<div class="flex flex-col sm:flex-row gap-3">
+<button class="h-12 px-6 bg-primary-container text-on-primary-container font-bold rounded-lg flex items-center justify-center gap-2 hover:brightness-110 shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined">download</span>
+                            Download Package
+                        </button>
+<button class="h-12 px-6 border border-outline-variant/20 text-on-surface font-bold rounded-lg flex items-center justify-center gap-2 hover:bg-surface-container-highest transition-all">
+                            View in Nexus
+                            <span class="material-symbols-outlined text-sm">open_in_new</span>
+</button>
+</div>
+</div>
+</section>
+</div>
+<!-- 2x2 Info Grid -->
+<div class="px-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+<!-- Repositories -->
+<div class="glass-card p-5 rounded-xl border border-outline-variant/10 group hover:border-primary/30 transition-all">
+<div class="flex items-center justify-between mb-4">
+<span class="material-symbols-outlined text-blue-400 p-2 bg-blue-400/10 rounded-lg">hub</span>
+<span class="text-[10px] font-label text-outline uppercase tracking-widest">Git Metrics</span>
+</div>
+<h4 class="text-xs font-label text-outline mb-1">Repositories</h4>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold text-on-surface">3</span>
+<span class="text-xs text-secondary-container bg-secondary/10 px-2 rounded-full">12 commits total</span>
+</div>
+</div>
+<!-- Pull Requests -->
+<div class="glass-card p-5 rounded-xl border border-outline-variant/10 group hover:border-primary/30 transition-all">
+<div class="flex items-center justify-between mb-4">
+<span class="material-symbols-outlined text-tertiary p-2 bg-tertiary/10 rounded-lg">merge</span>
+<span class="text-[10px] font-label text-outline uppercase tracking-widest">Code Review</span>
+</div>
+<h4 class="text-xs font-label text-outline mb-1">Pull Requests</h4>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold text-on-surface">5</span>
+<span class="text-xs text-tertiary-container bg-tertiary/10 px-2 rounded-full">All merged</span>
+</div>
+</div>
+<!-- Jira Issues -->
+<div class="glass-card p-5 rounded-xl border border-outline-variant/10 group hover:border-primary/30 transition-all">
+<div class="flex items-center justify-between mb-4">
+<span class="material-symbols-outlined text-error p-2 bg-error/10 rounded-lg">task</span>
+<span class="text-[10px] font-label text-outline uppercase tracking-widest">Issue Tracking</span>
+</div>
+<h4 class="text-xs font-label text-outline mb-1">Jira Issues</h4>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold text-on-surface">3</span>
+<div class="flex gap-1">
+<span class="text-[10px] bg-error-container text-on-error-container px-1.5 rounded">2 Crit</span>
+<span class="text-[10px] bg-surface-container-highest text-on-surface px-1.5 rounded">1 Maj</span>
+</div>
+</div>
+</div>
+<!-- CI/CD -->
+<div class="glass-card p-5 rounded-xl border border-outline-variant/10 group hover:border-primary/30 transition-all">
+<div class="flex items-center justify-between mb-4">
+<span class="material-symbols-outlined text-tertiary p-2 bg-tertiary/10 rounded-lg">check_circle</span>
+<span class="text-[10px] font-label text-outline uppercase tracking-widest">Automation</span>
+</div>
+<h4 class="text-xs font-label text-outline mb-1">Jenkins Build</h4>
+<div class="flex flex-col">
+<span class="text-lg font-label font-bold text-on-surface">#18234</span>
+<span class="text-[10px] font-label text-tertiary uppercase tracking-tighter">All tests passed</span>
+</div>
+</div>
+</div>
+<!-- Tabs -->
+<div class="px-8 mb-8">
+<div class="flex items-center gap-8 border-b border-outline-variant/10">
+<button class="pb-4 px-2 text-sm font-bold text-blue-400 border-b-2 border-blue-500 flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">source</span>
+                    Source &amp; Changes
+                </button>
+<button class="pb-4 px-2 text-sm font-medium text-slate-400 hover:text-on-surface transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">precision_manufacturing</span>
+                    CI/CD &amp; Testing
+                </button>
+<button class="pb-4 px-2 text-sm font-medium text-slate-400 hover:text-on-surface transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">history</span>
+                    History
+                </button>
+</div>
+</div>
+<!-- Content Sections -->
+<div class="px-8 space-y-12 pb-20">
+<!-- Section A: Repositories & Commits -->
+<section>
+<div class="flex items-center justify-between mb-6">
+<h2 class="text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-blue-500">terminal</span>
+                        Repositories &amp; Commits
+                    </h2>
+<span class="text-[10px] font-label text-outline uppercase tracking-widest">Auto-linked from build metadata</span>
+</div>
+<div class="space-y-4">
+<!-- Repo 1: Expanded -->
+<div class="bg-surface-container-low border border-outline-variant/10 rounded-xl overflow-hidden">
+<div class="flex items-center justify-between p-4 bg-surface-container-high/50 cursor-pointer">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-outline">expand_more</span>
+<span class="font-label text-sm text-on-surface font-bold">bitbucket.org/nxp/s32k3_dev</span>
+<span class="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded text-[10px] font-bold">BRANCH: main</span>
+</div>
+<span class="text-xs font-label text-outline">8 Commits</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-surface-container-lowest/50 border-b border-outline-variant/10">
+<tr>
+<th class="px-6 py-3 text-[10px] font-label text-outline uppercase tracking-widest">Hash</th>
+<th class="px-6 py-3 text-[10px] font-label text-outline uppercase tracking-widest">Message</th>
+<th class="px-6 py-3 text-[10px] font-label text-outline uppercase tracking-widest">Author</th>
+<th class="px-6 py-3 text-[10px] font-label text-outline uppercase tracking-widest">Date</th>
+<th class="px-6 py-3 text-[10px] font-label text-outline uppercase tracking-widest text-right">PR</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/5">
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="px-6 py-4 font-label text-xs text-blue-400">8d2f1a3</td>
+<td class="px-6 py-4 text-sm font-medium text-on-surface">Update core IDE dependencies for S32K3 rollout</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<img alt="John Doe" class="w-6 h-6 rounded-full border border-outline-variant/30" data-alt="professional corporate headshot of a male software engineer with soft background office blur" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBWbTLJGVefDGLwtuOrNXgQ4gNH_2pvOj0WvtBselPbsQ-143KCJ61OL3q5V4I3hISkJiZZWYksDTCnifgySlKB6MpgArjQL4-lASEXUXVh6QmBU5WJS0LjtevGiRfMvROb0243dCiiYVayRQxisk_BjuB0ODw7C3DCn-uDychbwQ3WT5s74O8OntVJ3F8BFeCMlxZE434W2JwaIc1U9O1vkqzQeNz3KZ0Ut0QqoPAWU96vezU-Jyw08Lf1eW6Yq_hBOyEDK6-KwVS"/>
+<span class="text-xs font-medium">John Doe</span>
+</div>
+</td>
+<td class="px-6 py-4 text-xs text-outline">2026-03-30 14:22</td>
+<td class="px-6 py-4 text-right">
+<a class="text-xs font-label text-outline hover:text-primary" href="#">#4412</a>
+</td>
+</tr>
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="px-6 py-4 font-label text-xs text-blue-400">c9e0a2b</td>
+<td class="px-6 py-4 text-sm font-medium text-on-surface">Merge fix for memory allocation in core logic</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<img alt="Jane Smith" class="w-6 h-6 rounded-full border border-outline-variant/30" data-alt="professional corporate headshot of a female developer with neutral background and soft studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBcUatwmZwDtpl1ePK-EjLFmtmKVVoy4awllKMY5Q3QEP2ShQtwu5hFCMjE3C9fjXgFVa3dw_GyTHSlc31TXU2E6DfausKtsLG_GyeGEXQ5PYaSt4kDcM-ki0mrhwGeLT6krIl0o6Kuwf4b4tKQJ8Q9s8F1E3blSWvsOAa4KAoP6BaziFz5hax4BfnU9LWnPBbnEgyGbnwXgCbQONGPQ_aUSfBRoGM7iZi21KQtxP49cJDxY7ikMz1VaYp8uy4zwdNiBWi79BVAEDiW"/>
+<span class="text-xs font-medium">Jane Smith</span>
+</div>
+</td>
+<td class="px-6 py-4 text-xs text-outline">2026-03-29 09:15</td>
+<td class="px-6 py-4 text-right">
+<a class="text-xs font-label text-outline hover:text-primary" href="#">#4408</a>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Repo 2: Expanded -->
+<div class="bg-surface-container-low border border-outline-variant/10 rounded-xl overflow-hidden">
+<div class="flex items-center justify-between p-4 bg-surface-container-high/50 cursor-pointer">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-outline">expand_more</span>
+<span class="font-label text-sm text-on-surface font-bold">bitbucket.org/nxp/s32k3_hal</span>
+<span class="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded text-[10px] font-bold">BRANCH: development</span>
+</div>
+<span class="text-xs font-label text-outline">4 Commits</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<tbody class="divide-y divide-outline-variant/5">
+<tr class="hover:bg-surface-bright transition-colors">
+<td class="px-6 py-4 font-label text-xs text-blue-400 w-[15%]">f2a5d91</td>
+<td class="px-6 py-4 text-sm font-medium text-on-surface">Initial HAL mapping for S32K3XX revision B</td>
+<td class="px-6 py-4 w-[25%]">
+<div class="flex items-center gap-2">
+<img alt="Author" class="w-6 h-6 rounded-full border border-outline-variant/30" data-alt="modern minimalist avatar of a software engineer in high-contrast profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCI0mgC8Yc0O1MVhyx99Mb-z_iSZNDDwJq60i_xo7SBSLTrFW8A4J82rgLueG64WltCvqX7TuEi8L_7tRQ1Hl3mYLZ53BGLO2CzS6NTljds7nYQp7IVDchAAochiti-JT6595IE1Wbe6PVP-GILfgwjJil3o6BbfNkPqu5h73JW2QWyTgCCbLEosjj6HKYXVMlzucZEaHhjMV1ivsEm30VetlsQ2wAOgAmGHghAtPYlaw0YG7xyasq0Qrssxh5qX_XyWNxTXkVMNA96"/>
+<span class="text-xs font-medium">Alex Chen</span>
+</div>
+</td>
+<td class="px-6 py-4 text-xs text-outline w-[20%]">2026-03-28 16:45</td>
+<td class="px-6 py-4 text-right w-[10%]">
+<a class="text-xs font-label text-outline hover:text-primary" href="#">#892</a>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Repo 3: Collapsed -->
+<div class="bg-surface-container-low border border-outline-variant/10 rounded-xl overflow-hidden">
+<div class="flex items-center justify-between p-4 bg-surface-container-high/50 cursor-pointer">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-outline rotate-[-90deg]">expand_more</span>
+<span class="font-label text-sm text-on-surface font-bold">bitbucket.org/nxp/s32k3_drivers</span>
+<span class="px-2 py-0.5 bg-surface-container-highest text-outline rounded text-[10px] font-bold">TAG: v1.2.0-release</span>
+</div>
+<span class="text-xs font-label text-outline">0 New Commits</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Section B: Pull Requests Table -->
+<section>
+<div class="flex items-center justify-between mb-6">
+<h2 class="text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary">call_merge</span>
+                        Linked Pull Requests
+                    </h2>
+</div>
+<div class="bg-surface-container-low border border-outline-variant/10 rounded-xl overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-surface-container-high/30 border-b border-outline-variant/10">
+<tr>
+<th class="px-6 py-4 text-[10px] font-label text-outline uppercase tracking-widest">PR#</th>
+<th class="px-6 py-4 text-[10px] font-label text-outline uppercase tracking-widest">Title</th>
+<th class="px-6 py-4 text-[10px] font-label text-outline uppercase tracking-widest">Repo</th>
+<th class="px-6 py-4 text-[10px] font-label text-outline uppercase tracking-widest">Author</th>
+<th class="px-6 py-4 text-[10px] font-label text-outline uppercase tracking-widest">Issue</th>
+<th class="px-6 py-4 text-[10px] font-label text-outline uppercase tracking-widest">Changes</th>
+<th class="px-6 py-4 text-[10px] font-label text-outline uppercase tracking-widest">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/5">
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="px-6 py-4 font-label text-xs text-blue-400">#4412</td>
+<td class="px-6 py-4 text-sm font-bold text-on-surface">Refactor S32K3 Bootloader Interface</td>
+<td class="px-6 py-4 text-xs text-outline font-label">s32k3_dev</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="text-xs text-on-surface">j.doe</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="text-xs font-label text-blue-400 hover:underline">S32DS-18231</span>
+</td>
+<td class="px-6 py-4 text-xs font-label">
+<span class="text-tertiary">+421</span> <span class="text-error">-12</span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-tertiary/10 text-tertiary text-[10px] font-bold uppercase tracking-wider">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                                            Merged
+                                        </span>
+</td>
+</tr>
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="px-6 py-4 font-label text-xs text-blue-400">#4408</td>
+<td class="px-6 py-4 text-sm font-bold text-on-surface">Memory Leak Mitigation in Core Plugin</td>
+<td class="px-6 py-4 text-xs text-outline font-label">s32k3_dev</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="text-xs text-on-surface">j.smith</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="text-xs font-label text-blue-400 hover:underline">S32DS-18240</span>
+</td>
+<td class="px-6 py-4 text-xs font-label">
+<span class="text-tertiary">+12</span> <span class="text-error">-142</span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-tertiary/10 text-tertiary text-[10px] font-bold uppercase tracking-wider">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                                            Merged
+                                        </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<!-- Section C: Jira Issues -->
+<section>
+<div class="flex items-center justify-between mb-6">
+<h2 class="text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-error">bug_report</span>
+                        Linked Jira Issues
+                    </h2>
+</div>
+<div class="bg-surface-container-low border border-outline-variant/10 rounded-xl overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-surface-container-high/30 border-b border-outline-variant/10">
+<tr>
+<th class="px-6 py-4 text-[10px] font-label text-outline uppercase tracking-widest">Key</th>
+<th class="px-6 py-4 text-[10px] font-label text-outline uppercase tracking-widest">Summary</th>
+<th class="px-6 py-4 text-[10px] font-label text-outline uppercase tracking-widest">Priority</th>
+<th class="px-6 py-4 text-[10px] font-label text-outline uppercase tracking-widest">Status</th>
+<th class="px-6 py-4 text-[10px] font-label text-outline uppercase tracking-widest">Assignee</th>
+<th class="px-6 py-4 text-[10px] font-label text-outline uppercase tracking-widest">Labels</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/5">
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="px-6 py-4 font-label text-xs text-blue-400">S32DS-18231</td>
+<td class="px-6 py-4 text-sm font-medium text-on-surface">Critical: Bootloader fails on target hardware rev B</td>
+<td class="px-6 py-4">
+<span class="material-symbols-outlined text-error text-[20px]" style="font-variation-settings: 'FILL' 1;">keyboard_double_arrow_up</span>
+</td>
+<td class="px-6 py-4">
+<span class="px-2 py-0.5 bg-surface-container-highest text-tertiary border border-tertiary/20 rounded-full text-[10px] font-bold uppercase tracking-wider">Done</span>
+</td>
+<td class="px-6 py-4 text-xs text-on-surface">Alex Chen</td>
+<td class="px-6 py-4">
+<div class="flex gap-1">
+<span class="px-1.5 py-0.5 bg-outline-variant/10 text-outline rounded text-[9px] font-label">v2.4.0</span>
+<span class="px-1.5 py-0.5 bg-outline-variant/10 text-outline rounded text-[9px] font-label">blocking</span>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="px-6 py-4 font-label text-xs text-blue-400">S32DS-18240</td>
+<td class="px-6 py-4 text-sm font-medium text-on-surface">Minor: Log file format mismatch in build output</td>
+<td class="px-6 py-4">
+<span class="material-symbols-outlined text-tertiary text-[20px]" style="font-variation-settings: 'FILL' 1;">keyboard_arrow_up</span>
+</td>
+<td class="px-6 py-4">
+<span class="px-2 py-0.5 bg-surface-container-highest text-tertiary border border-tertiary/20 rounded-full text-[10px] font-bold uppercase tracking-wider">Done</span>
+</td>
+<td class="px-6 py-4 text-xs text-on-surface">Sarah Connor</td>
+<td class="px-6 py-4">
+<div class="flex gap-1">
+<span class="px-1.5 py-0.5 bg-outline-variant/10 text-outline rounded text-[9px] font-label">automation</span>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Floating Action Button Contextual (Suppressed on details per instructions) -->
+<!-- Suppression Logic: On Details, Navigation is secondary to Content Analysis -->
+<script>
+(function () {
+  const sidebarToggle = document.getElementById('sidebarToggle');
+  const sidebarToggleIcon = document.getElementById('sidebarToggleIcon');
+  if (!sidebarToggle || !sidebarToggleIcon) return;
+
+  const storageKey = 'urgp.sidebarCollapsed';
+  const applyState = (collapsed) => {
+    document.body.classList.toggle('sidebar-collapsed', collapsed);
+    sidebarToggleIcon.textContent = collapsed ? 'menu' : 'menu_open';
+    sidebarToggle.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+    sidebarToggle.setAttribute('aria-expanded', String(!collapsed));
+  };
+
+  const savedState = localStorage.getItem(storageKey);
+  applyState(savedState === '1');
+
+  sidebarToggle.addEventListener('click', () => {
+    const collapsed = !document.body.classList.contains('sidebar-collapsed');
+    applyState(collapsed);
+    localStorage.setItem(storageKey, collapsed ? '1' : '0');
+  });
+})();
+</script>
+</body></html>
+
+

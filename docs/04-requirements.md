@@ -37,7 +37,8 @@ Requirements are tagged with delivery phases to enable incremental value deliver
 - **Immutability_Controller**: Component enforcing write-once semantics for release artifacts
 - **Tenant**: An isolated workspace representing an organization or division
 - **Product**: A software project within a tenant with independent configuration
-- **Release_Train**: A delivery channel within a product (e.g., Nightly, Weekly, LTS)
+- **Release**: A versioned release milestone within a product (e.g., S32 DS 3.6.8 RFP, S32 DS 3.6.7 CD). Groups all builds targeting the same release version
+- **Build_Type**: Classification of build cadence within a release: Nightly, Weekly, RC (Release Candidate), Hotfix
 - **Build_Manifest**: Immutable record of a specific build execution with complete traceability
 - **Build_Lifecycle**: The state machine governing build manifest transitions: `ingesting → hydrating → completed → testing → released → deprecated`
 - **Universal_Artifact**: Technology-agnostic representation of build outputs
@@ -216,19 +217,23 @@ Requirements are tagged with delivery phases to enable incremental value deliver
 #### Acceptance Criteria
 
 1. THE Self_Service_Portal SHALL provide a web-based user interface accessible via HTTPS protocol
-2. WHEN a user authenticates to Self_Service_Portal, THE Self_Service_Portal SHALL display a list of Products the user has access to (in Phase 1: all products visible, RBAC filtering in Phase 2)
-3. WHEN a user selects a Product, THE Self_Service_Portal SHALL display a list of Build_Manifest entities ordered by creation_timestamp descending with pagination
-4. WHEN a user selects a Build_Manifest, THE Self_Service_Portal SHALL display the complete Traceability_Graph including commits, Pull_Requests, and Issues
-5. THE Self_Service_Portal SHALL render a "What's New" table showing Issue entities with title, priority, status, and associated Pull_Request links
-6. THE Self_Service_Portal SHALL provide download links for each Universal_Artifact in the Build_Manifest
-7. WHEN a user clicks a Universal_Artifact download link, THE Self_Service_Portal SHALL redirect to the artifact's `storage_uri` (checksum verification happens at ingestion time, not download time in P1)
-8. WHERE Universal_Artifact type is `oci_image`, THE Self_Service_Portal SHALL display docker pull command syntax instead of download link
-9. THE Self_Service_Portal SHALL provide a comparison view accepting two Build_Manifest entities and displaying differential changes
-10. THE Self_Service_Portal SHALL render within 1 second for Build_Manifest pages containing up to 50 artifacts
-11. THE Self_Service_Portal SHALL display the Build_Lifecycle status with visual indicators (color-coded badges)
-12. THE Self_Service_Portal SHALL provide search functionality by build_id, commit_hash, issue_id, and date range
+2. WHEN a user authenticates to Self_Service_Portal, THE Self_Service_Portal SHALL display a Products catalog showing all Products the user has access to with platform-wide KPI metrics (in Phase 1: all products visible, RBAC filtering in Phase 2)
+3. WHEN a user selects a Product, THE Self_Service_Portal SHALL display a list of Release entities for that Product, showing release version, release type, lifecycle status, and summary statistics
+4. WHEN a user selects a Release, THE Self_Service_Portal SHALL display a list of Build_Manifest entities within that Release, filterable by build_type (Nightly, Weekly, RC, Hotfix), ordered by creation_timestamp descending with pagination
+5. WHEN a user selects a Build_Manifest, THE Self_Service_Portal SHALL display the build detail including associated Packages (Universal_Artifacts), the complete Traceability_Graph including commits, Pull_Requests, and Issues
+6. THE Self_Service_Portal SHALL render a "What's New" view showing Issue entities with title, priority, status, and associated Pull_Request links, with traceability visualization
+7. THE Self_Service_Portal SHALL provide download links for each Universal_Artifact (Package) in the Build_Manifest
+8. WHEN a user clicks a Universal_Artifact download link, THE Self_Service_Portal SHALL redirect to the artifact's `storage_uri` (checksum verification happens at ingestion time, not download time in P1)
+9. WHERE Universal_Artifact type is `oci_image`, THE Self_Service_Portal SHALL display docker pull command syntax instead of download link
+10. THE Self_Service_Portal SHALL provide a comparison view accepting two Build_Manifest entities and displaying differential changes across Issues, Pull_Requests, and Packages
+11. THE Self_Service_Portal SHALL provide a Package detail view showing source repository, CI/CD pipeline status, and test results
+12. THE Self_Service_Portal SHALL render within 1 second for Build_Manifest pages containing up to 50 artifacts
+13. THE Self_Service_Portal SHALL display the Build_Lifecycle status with visual indicators (color-coded badges)
+14. THE Self_Service_Portal SHALL provide search functionality by build_id, commit_hash, issue_id, and date range
+15. THE Self_Service_Portal SHALL provide a cross-product Activity Feed showing live build metrics, active builds, system alerts, and build activity heatmaps
+16. THE Self_Service_Portal SHALL implement a sidebar navigation with sections: Products, Activity, Comparisons, Reports, and Settings
 
-> **Change from previous version**: Download flow simplified for P1 (no pre-download checksum verification — this happens at ingestion). Lifecycle status display added. Search functionality added.
+> **Change from previous version**: Navigation restructured from flat Product→Build to hierarchical Product→Release→Build. Release entity added as intermediate navigation level. Activity Feed, Package Detail, and Package CI/CD views added. Sidebar navigation replaces top-bar product selector. Page count expanded from 6 to 10 screens. See `/frontend/designs/` for reference mockups.
 
 ### Requirement 10: Role-Based Access Control `[Phase: P2]`
 
