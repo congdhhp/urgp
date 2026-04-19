@@ -23,7 +23,8 @@ Read in order for full context:
 | 4 | [Requirements](docs/04-requirements.md) | 24 requirements with acceptance criteria, phased P1/P2/P3 |
 | 5 | [Technical Design](docs/05-technical-design.md) | Database schema, component interfaces, API design, project structure |
 | 6 | [Migration Strategy](docs/06-migration-strategy.md) | 4-phase rollout plan from legacy system to URGP |
-| 7 | [Implementation Plan](docs/07-implementation-plan.md) | 58 tasks + 40 tests across 3 phases with timeline and cost estimates |
+| 7 | [Implementation Plan](docs/07-implementation-plan.md) | 61 tasks + 40 tests across 3 phases with timeline and cost estimates |
+| 8 | [Team & Work Plan](docs/08-team-workplan.md) | Team structure, role assignments, work breakdown with task ownership |
 
 ## Tech Stack
 
