@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Command Horizon | S32 Design Studio — Releases</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-variant": "#2d3449",
+                    "on-secondary-fixed-variant": "#3c475a",
+                    "on-primary": "#002a78",
+                    "surface-bright": "#31394d",
+                    "inverse-primary": "#0053db",
+                    "tertiary-container": "#00788c",
+                    "on-tertiary-fixed": "#001f26",
+                    "outline-variant": "#434655",
+                    "on-surface-variant": "#c3c6d7",
+                    "error-container": "#93000a",
+                    "on-primary-fixed": "#00174b",
+                    "tertiary-fixed": "#acedff",
+                    "on-surface": "#dae2fd",
+                    "secondary-container": "#3e495d",
+                    "secondary-fixed": "#d8e3fb",
+                    "secondary": "#bcc7de",
+                    "surface-dim": "#0b1326",
+                    "on-secondary-container": "#aeb9d0",
+                    "surface-container-highest": "#2d3449",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "primary-container": "#2563eb",
+                    "on-tertiary": "#003640",
+                    "error": "#ffb4ab",
+                    "on-error": "#690005",
+                    "on-tertiary-fixed-variant": "#004e5c",
+                    "on-secondary": "#263143",
+                    "tertiary": "#4cd7f6",
+                    "inverse-on-surface": "#283044",
+                    "outline": "#8d90a0",
+                    "inverse-surface": "#dae2fd",
+                    "surface-tint": "#b4c5ff",
+                    "on-tertiary-container": "#d7f6ff",
+                    "background": "#0b1326",
+                    "surface-container-lowest": "#060e20",
+                    "surface-container-low": "#131b2e",
+                    "secondary-fixed-dim": "#bcc7de",
+                    "surface-container-high": "#222a3d",
+                    "on-primary-container": "#eeefff",
+                    "tertiary-fixed-dim": "#4cd7f6",
+                    "surface-container": "#171f33",
+                    "primary-fixed": "#dbe1ff",
+                    "on-background": "#dae2fd",
+                    "primary": "#b4c5ff",
+                    "surface": "#0b1326",
+                    "on-error-container": "#ffdad6",
+                    "on-secondary-fixed": "#111c2d"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Inter", "sans-serif"],
+                    "body": ["Inter", "sans-serif"],
+                    "label": ["JetBrains Mono", "monospace"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { background-color: #0b1326; color: #dae2fd; font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        @media (min-width: 768px) {
+            :root {
+                --sidebar-expanded-width: 16rem;
+                --sidebar-collapsed-width: 5rem;
+            }
+            .js-sidebar { width: var(--sidebar-expanded-width); overflow: hidden; transition: width 220ms ease; }
+            .js-offset-left { transition: left 220ms ease; }
+            .js-offset-margin { transition: margin-left 220ms ease; }
+            .js-offset-width { transition: width 220ms ease; }
+            body.sidebar-collapsed .js-sidebar { width: var(--sidebar-collapsed-width); }
+            body.sidebar-collapsed .js-offset-left { left: var(--sidebar-collapsed-width) !important; }
+            body.sidebar-collapsed .js-offset-margin { margin-left: var(--sidebar-collapsed-width) !important; }
+            body.sidebar-collapsed .js-offset-width { width: calc(100% - var(--sidebar-collapsed-width)) !important; }
+            body.sidebar-collapsed .js-sidebar .js-sidebar-brand { justify-content: center; padding-left: 0; padding-right: 0; }
+            body.sidebar-collapsed .js-sidebar .js-sidebar-meta { display: none; }
+            body.sidebar-collapsed .js-sidebar nav a,
+            body.sidebar-collapsed .js-sidebar .mt-auto a { justify-content: center; padding-left: 0.75rem; padding-right: 0.75rem; }
+            body.sidebar-collapsed .js-sidebar nav a span:not(.material-symbols-outlined),
+            body.sidebar-collapsed .js-sidebar .mt-auto a span:not(.material-symbols-outlined) { display: none; }
+            body.sidebar-collapsed .js-sidebar .js-sidebar-primary-btn { width: 2.5rem; height: 2.5rem; margin-left: auto; margin-right: auto; padding: 0; justify-content: center; }
+            body.sidebar-collapsed .js-sidebar .js-sidebar-primary-btn .js-sidebar-label { display: none; }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface flex flex-col min-h-screen selection:bg-primary/30">
+<!-- Sidebar -->
+<aside class="js-sidebar fixed left-0 top-0 h-screen w-64 bg-[#131b2e] border-r border-[#434655]/20 z-[60] hidden md:flex flex-col pt-20 pb-6 px-4">
+<div class="js-sidebar-brand flex items-center gap-3 mb-8 px-4">
+<div class="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container">rocket_launch</span>
+</div>
+<div class="js-sidebar-meta">
+<h3 class="font-bold text-on-surface leading-tight">Mission Control</h3>
+<p class="text-xs text-on-surface/50 mono">Operator 01</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="bg-[#222a3d] text-[#dae2fd] rounded-lg px-4 py-3 flex items-center gap-3" href="00-products.html">
+<span class="material-symbols-outlined text-[#2563eb]">apps</span>
+<span class="font-medium text-sm tracking-wide">Products</span>
+</a>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg transition-colors duration-150" href="09-activity.html">
+<span class="material-symbols-outlined">monitoring</span>
+<span class="font-medium text-sm tracking-wide">Activity</span>
+</a>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg transition-colors duration-150" href="05-build-comparison-issues.html">
+<span class="material-symbols-outlined">compare_arrows</span>
+<span class="font-medium text-sm tracking-wide">Comparisons</span>
+</a>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">bar_chart</span>
+<span class="font-medium text-sm tracking-wide">Reports</span>
+</a>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-medium text-sm tracking-wide">Settings</span>
+</a>
+</nav>
+<div class="mt-auto space-y-1">
+<button class="js-sidebar-primary-btn w-full mb-6 py-3 px-4 bg-primary-container text-on-primary-container rounded-lg font-bold text-sm active:scale-95 duration-200 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-base">add_circle</span>
+<span class="js-sidebar-label">New Build</span>
+</button>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-medium text-sm tracking-wide">Support</span>
+</a>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg" href="#">
+<span class="material-symbols-outlined">code</span>
+<span class="font-medium text-sm tracking-wide">API</span>
+</a>
+</div>
+</aside>
+
+<!-- Top Bar -->
+<header class="js-offset-left fixed top-0 left-0 right-0 md:left-64 z-50 bg-[#131b2e]/80 backdrop-blur-xl border-b border-[#434655]/20 flex justify-between items-center px-6 h-16">
+<div class="flex items-center gap-8">
+<button aria-label="Collapse sidebar" class="hidden md:inline-flex w-9 h-9 items-center justify-center rounded-lg border border-outline-variant/20 text-on-surface/70 hover:text-on-surface hover:bg-surface-container-high transition-colors" id="sidebarToggle" type="button">
+<span class="material-symbols-outlined text-lg" id="sidebarToggleIcon">menu_open</span>
+</button>
+<span class="text-xl font-black text-[#dae2fd] tracking-tight">Command Horizon</span>
+<div class="hidden lg:flex items-center gap-2 bg-[#222a3d] px-3 py-1.5 rounded-lg border border-outline-variant/20">
+<span class="material-symbols-outlined text-sm text-on-surface/40">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm text-on-surface placeholder:text-on-surface/30 w-64 mono" placeholder="Search builds or assets..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden md:flex items-center gap-4 border-r border-outline-variant/20 pr-6">
+<a class="text-[#dae2fd]/60 font-medium text-sm hover:text-[#2563eb]" href="#">Audit Logs</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative text-[#dae2fd]/60 hover:text-[#dae2fd]">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="text-[#dae2fd]/60 hover:text-[#dae2fd]">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="hidden sm:flex items-center gap-3 ml-2">
+<div class="text-right">
+<p class="text-xs font-bold">S32 Design Studio</p>
+<p class="text-[10px] text-on-surface/50 mono">BUILD_MASTER_X</p>
+</div>
+<img class="w-8 h-8 rounded-lg object-cover ring-2 ring-[#2563eb]/20" data-alt="User avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPS6zF3cGrLpka_Jr7mD89_ZdVXAVmB3C8rdDiw2p31yvfu427O278Hy1zcJ9Bqxv9pw8X_-jVOpgBhX2zEyRtRcpdWnzwlx_J75_RSLX6qLFFFK8Iv0jMiypUsVALZaNdzKvcyP3lKv9tJqvxdSSdFjrHb80JrTjIZ0-V6yAJcye4KfxLxv9fLpDcYsfrkaf7fKoJ01opp_gzMaC4cKb35MqrN0LG58YTbxYPItmy7Mic2fdN7tOBVIHmlQ6QR6QdSZ5wyG16xfHg"/>
+</div>
+</div>
+</div>
+</header>
+
+<!-- Main Content -->
+<main class="js-offset-margin flex-1 md:ml-64 pt-24 px-8 pb-12 min-h-screen">
+<!-- Breadcrumbs & Header -->
+<header class="mb-8">
+<nav class="flex items-center gap-2 text-slate-500 text-[10px] mono uppercase tracking-widest mb-4">
+<a class="hover:text-primary transition-colors cursor-pointer" href="00-products.html">Products</a>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span class="text-on-surface">S32 Design Studio</span>
+</nav>
+<div class="flex justify-between items-end">
+<div class="flex items-center gap-5">
+<div class="w-14 h-14 rounded-xl bg-primary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl text-primary">developer_board</span>
+</div>
+<div>
+<h1 class="text-3xl font-extrabold tracking-tighter text-on-surface mb-1">S32 Design Studio</h1>
+<p class="text-slate-500 font-medium">4 releases · 142 total builds · Integrated development environment for NXP S32 automotive MCUs</p>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="bg-surface-container-high text-on-surface px-4 py-2 rounded-lg font-semibold text-sm hover:bg-surface-container-highest transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-base">settings</span>
+Product Settings
+</button>
+<button class="bg-primary-container text-on-primary-container px-5 py-2 rounded-lg font-bold text-sm flex items-center gap-2 shadow-lg shadow-primary-container/20">
+<span class="material-symbols-outlined text-base">add</span>
+New Release
+</button>
+</div>
+</div>
+</header>
+
+<!-- Product KPIs -->
+<section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+<div class="bg-surface-container-high rounded-xl p-5">
+<span class="text-slate-500 mono text-[10px] uppercase tracking-widest mb-1 block">Active Releases</span>
+<span class="text-2xl font-extrabold text-on-surface">4</span>
+<span class="text-primary text-[10px] mono mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">new_releases</span> 1 In Progress
+</span>
+</div>
+<div class="bg-surface-container-high rounded-xl p-5">
+<span class="text-slate-500 mono text-[10px] uppercase tracking-widest mb-1 block">Total Builds</span>
+<span class="text-2xl font-extrabold text-on-surface">142</span>
+<span class="text-tertiary text-[10px] mono mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">trending_up</span> +8 this week
+</span>
+</div>
+<div class="bg-surface-container-high rounded-xl p-5">
+<span class="text-slate-500 mono text-[10px] uppercase tracking-widest mb-1 block">Success Rate</span>
+<span class="text-2xl font-extrabold text-on-surface">96.8%</span>
+<span class="text-tertiary text-[10px] mono mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">check_circle</span> Stable
+</span>
+</div>
+<div class="bg-surface-container-high rounded-xl p-5">
+<span class="text-slate-500 mono text-[10px] uppercase tracking-widest mb-1 block">Open Issues</span>
+<span class="text-2xl font-extrabold text-on-surface">23</span>
+<span class="text-error text-[10px] mono mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">report</span> 3 Critical
+</span>
+</div>
+</section>
+
+<!-- Releases Table -->
+<section class="bg-surface-container-low rounded-xl overflow-hidden shadow-xl mb-12">
+<div class="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-surface-container-high/30">
+<h2 class="text-lg font-bold text-on-surface tracking-tight">Releases</h2>
+<div class="flex items-center gap-3">
+<div class="flex bg-surface-container rounded-lg border border-outline-variant/20 overflow-hidden">
+<button class="px-3 py-1.5 text-[10px] mono uppercase tracking-wider font-bold text-primary bg-primary/10">All</button>
+<button class="px-3 py-1.5 text-[10px] mono uppercase tracking-wider text-slate-500 hover:text-on-surface transition-colors">Active</button>
+<button class="px-3 py-1.5 text-[10px] mono uppercase tracking-wider text-slate-500 hover:text-on-surface transition-colors">Released</button>
+<button class="px-3 py-1.5 text-[10px] mono uppercase tracking-wider text-slate-500 hover:text-on-surface transition-colors">Archived</button>
+</div>
+</div>
+</div>
+
+<div class="divide-y divide-white/5">
+
+<!-- Release 1: S32 DS 3.6.8 RFP — In Progress -->
+<a href="02-release-builds.html" class="flex items-center gap-6 px-6 py-5 hover:bg-surface-bright/20 transition-colors group">
+<div class="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-xl text-primary">new_releases</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-3 mb-1">
+<h3 class="text-base font-bold text-on-surface group-hover:text-primary transition-colors">S32 DS 3.6.8 RFP</h3>
+<span class="bg-primary/10 text-primary px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border border-primary/20">In Progress</span>
+<span class="bg-surface-container-highest text-on-surface-variant px-2 py-0.5 rounded text-[10px] mono">RFP</span>
+</div>
+<p class="text-sm text-slate-500 truncate">Release for Production — Target: Apr 30, 2026 · Branch: release/3.6.8</p>
+</div>
+<div class="flex items-center gap-8 flex-shrink-0">
+<div class="text-right">
+<div class="text-sm font-bold text-on-surface">38</div>
+<div class="text-[10px] text-slate-500 mono uppercase">Builds</div>
+</div>
+<div class="text-right">
+<div class="text-sm font-bold text-on-surface">12</div>
+<div class="text-[10px] text-slate-500 mono uppercase">RC Builds</div>
+</div>
+<div class="text-right">
+<div class="text-sm font-bold text-tertiary">94.7%</div>
+<div class="text-[10px] text-slate-500 mono uppercase">Success</div>
+</div>
+<div class="text-right min-w-[80px]">
+<div class="text-xs text-slate-500 mono">2h ago</div>
+<div class="text-[10px] text-slate-500">Last build</div>
+</div>
+<span class="material-symbols-outlined text-sm text-slate-500 group-hover:text-primary transition-colors">arrow_forward</span>
+</div>
+</a>
+
+<!-- Release 2: S32 DS 3.6.7 CD — Released -->
+<a href="#" class="flex items-center gap-6 px-6 py-5 hover:bg-surface-bright/20 transition-colors group">
+<div class="w-12 h-12 rounded-xl bg-tertiary/10 border border-tertiary/20 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-xl text-tertiary">verified</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-3 mb-1">
+<h3 class="text-base font-bold text-on-surface group-hover:text-primary transition-colors">S32 DS 3.6.7 CD</h3>
+<span class="bg-tertiary/10 text-tertiary px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border border-tertiary/20">Released</span>
+<span class="bg-surface-container-highest text-on-surface-variant px-2 py-0.5 rounded text-[10px] mono">CD</span>
+</div>
+<p class="text-sm text-slate-500 truncate">Continuous Delivery — Released: Mar 15, 2026 · Branch: release/3.6.7</p>
+</div>
+<div class="flex items-center gap-8 flex-shrink-0">
+<div class="text-right">
+<div class="text-sm font-bold text-on-surface">52</div>
+<div class="text-[10px] text-slate-500 mono uppercase">Builds</div>
+</div>
+<div class="text-right">
+<div class="text-sm font-bold text-on-surface">8</div>
+<div class="text-[10px] text-slate-500 mono uppercase">RC Builds</div>
+</div>
+<div class="text-right">
+<div class="text-sm font-bold text-tertiary">98.1%</div>
+<div class="text-[10px] text-slate-500 mono uppercase">Success</div>
+</div>
+<div class="text-right min-w-[80px]">
+<div class="text-xs text-slate-500 mono">Mar 15</div>
+<div class="text-[10px] text-slate-500">Released</div>
+</div>
+<span class="material-symbols-outlined text-sm text-slate-500 group-hover:text-primary transition-colors">arrow_forward</span>
+</div>
+</a>
+
+<!-- Release 3: S32 DS 3.6.6 RFP — Released -->
+<a href="#" class="flex items-center gap-6 px-6 py-5 hover:bg-surface-bright/20 transition-colors group">
+<div class="w-12 h-12 rounded-xl bg-tertiary/10 border border-tertiary/20 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-xl text-tertiary">verified</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-3 mb-1">
+<h3 class="text-base font-bold text-on-surface group-hover:text-primary transition-colors">S32 DS 3.6.6 RFP</h3>
+<span class="bg-tertiary/10 text-tertiary px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border border-tertiary/20">Released</span>
+<span class="bg-surface-container-highest text-on-surface-variant px-2 py-0.5 rounded text-[10px] mono">RFP</span>
+</div>
+<p class="text-sm text-slate-500 truncate">Release for Production — Released: Jan 20, 2026 · Branch: release/3.6.6</p>
+</div>
+<div class="flex items-center gap-8 flex-shrink-0">
+<div class="text-right">
+<div class="text-sm font-bold text-on-surface">34</div>
+<div class="text-[10px] text-slate-500 mono uppercase">Builds</div>
+</div>
+<div class="text-right">
+<div class="text-sm font-bold text-on-surface">6</div>
+<div class="text-[10px] text-slate-500 mono uppercase">RC Builds</div>
+</div>
+<div class="text-right">
+<div class="text-sm font-bold text-tertiary">100%</div>
+<div class="text-[10px] text-slate-500 mono uppercase">Success</div>
+</div>
+<div class="text-right min-w-[80px]">
+<div class="text-xs text-slate-500 mono">Jan 20</div>
+<div class="text-[10px] text-slate-500">Released</div>
+</div>
+<span class="material-symbols-outlined text-sm text-slate-500 group-hover:text-primary transition-colors">arrow_forward</span>
+</div>
+</a>
+
+<!-- Release 4: S32 DS 3.5.0 LTS — Archived/Deprecated -->
+<a href="#" class="flex items-center gap-6 px-6 py-5 hover:bg-surface-bright/20 transition-colors group opacity-60">
+<div class="w-12 h-12 rounded-xl bg-surface-container-highest border border-outline-variant/20 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-xl text-on-surface-variant">archive</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-3 mb-1">
+<h3 class="text-base font-bold text-on-surface group-hover:text-primary transition-colors">S32 DS 3.5.0 LTS</h3>
+<span class="bg-surface-container-highest text-on-surface-variant px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border border-outline-variant/20">Archived</span>
+<span class="bg-surface-container-highest text-on-surface-variant px-2 py-0.5 rounded text-[10px] mono">LTS</span>
+</div>
+<p class="text-sm text-slate-500 truncate">Long-Term Support — Released: Oct 5, 2025 · EOL: Oct 2027 · Branch: release/3.5.0-lts</p>
+</div>
+<div class="flex items-center gap-8 flex-shrink-0">
+<div class="text-right">
+<div class="text-sm font-bold text-on-surface">18</div>
+<div class="text-[10px] text-slate-500 mono uppercase">Builds</div>
+</div>
+<div class="text-right">
+<div class="text-sm font-bold text-on-surface">4</div>
+<div class="text-[10px] text-slate-500 mono uppercase">RC Builds</div>
+</div>
+<div class="text-right">
+<div class="text-sm font-bold text-on-surface-variant">100%</div>
+<div class="text-[10px] text-slate-500 mono uppercase">Success</div>
+</div>
+<div class="text-right min-w-[80px]">
+<div class="text-xs text-slate-500 mono">Oct 5, 25</div>
+<div class="text-[10px] text-slate-500">Released</div>
+</div>
+<span class="material-symbols-outlined text-sm text-slate-500 group-hover:text-primary transition-colors">arrow_forward</span>
+</div>
+</a>
+
+</div>
+</section>
+
+<!-- Release Timeline -->
+<section class="mb-12">
+<h2 class="text-lg font-bold text-on-surface tracking-tight mb-6">Release Timeline</h2>
+<div class="relative">
+<div class="absolute left-6 top-0 bottom-0 w-px bg-outline-variant/30"></div>
+<div class="space-y-6 ml-14">
+
+<div class="relative">
+<div class="absolute -left-[2.6rem] top-1 w-4 h-4 rounded-full bg-primary border-2 border-primary-container"></div>
+<div class="bg-surface-container-high rounded-xl p-5">
+<div class="flex items-center gap-3 mb-2">
+<span class="text-sm font-bold text-on-surface">S32 DS 3.6.8 RFP</span>
+<span class="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">In Progress</span>
+</div>
+<div class="flex gap-6 text-xs text-slate-500 mono">
+<span>Started: Mar 20, 2026</span>
+<span>Target: Apr 30, 2026</span>
+<span>38 builds</span>
+</div>
+<div class="mt-3 h-1.5 w-full bg-surface-container-low rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[65%]"></div>
+</div>
+<div class="mt-1 text-[10px] text-primary mono text-right">65% complete</div>
+</div>
+</div>
+
+<div class="relative">
+<div class="absolute -left-[2.6rem] top-1 w-4 h-4 rounded-full bg-tertiary border-2 border-tertiary-container"></div>
+<div class="bg-surface-container rounded-xl p-5">
+<div class="flex items-center gap-3 mb-2">
+<span class="text-sm font-bold text-on-surface">S32 DS 3.6.7 CD</span>
+<span class="bg-tertiary/10 text-tertiary px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">Released</span>
+</div>
+<div class="flex gap-6 text-xs text-slate-500 mono">
+<span>Started: Jan 25, 2026</span>
+<span>Released: Mar 15, 2026</span>
+<span>52 builds</span>
+</div>
+</div>
+</div>
+
+<div class="relative">
+<div class="absolute -left-[2.6rem] top-1 w-4 h-4 rounded-full bg-tertiary border-2 border-tertiary-container"></div>
+<div class="bg-surface-container rounded-xl p-5">
+<div class="flex items-center gap-3 mb-2">
+<span class="text-sm font-bold text-on-surface">S32 DS 3.6.6 RFP</span>
+<span class="bg-tertiary/10 text-tertiary px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">Released</span>
+</div>
+<div class="flex gap-6 text-xs text-slate-500 mono">
+<span>Started: Nov 10, 2025</span>
+<span>Released: Jan 20, 2026</span>
+<span>34 builds</span>
+</div>
+</div>
+</div>
+
+<div class="relative">
+<div class="absolute -left-[2.6rem] top-1 w-4 h-4 rounded-full bg-outline-variant border-2 border-surface-container-highest"></div>
+<div class="bg-surface-container rounded-xl p-5 opacity-60">
+<div class="flex items-center gap-3 mb-2">
+<span class="text-sm font-bold text-on-surface">S32 DS 3.5.0 LTS</span>
+<span class="bg-surface-container-highest text-on-surface-variant px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">Archived</span>
+</div>
+<div class="flex gap-6 text-xs text-slate-500 mono">
+<span>Started: Aug 1, 2025</span>
+<span>Released: Oct 5, 2025</span>
+<span>18 builds</span>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+</section>
+
+<!-- Product Configuration Summary -->
+<section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="bg-surface-container-low rounded-xl p-6">
+<h3 class="text-sm font-bold text-on-surface mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-base text-primary">integration_instructions</span>
+Git Integration
+</h3>
+<div class="space-y-3">
+<div class="flex justify-between text-sm">
+<span class="text-slate-500">Primary Repository</span>
+<span class="mono text-xs text-on-surface-variant">bitbucket.org/nxp/s32ds-ide</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="text-slate-500">Additional Repos</span>
+<span class="mono text-xs text-on-surface-variant">s32k3_drivers, s32k3_hal</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="text-slate-500">Default Branch</span>
+<span class="mono text-xs text-on-surface-variant">main</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-low rounded-xl p-6">
+<h3 class="text-sm font-bold text-on-surface mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-base text-primary">bug_report</span>
+Issue Tracker
+</h3>
+<div class="space-y-3">
+<div class="flex justify-between text-sm">
+<span class="text-slate-500">Tracker</span>
+<span class="mono text-xs text-on-surface-variant">Jira (jira.nxp.com)</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="text-slate-500">Project Key</span>
+<span class="mono text-xs text-on-surface-variant">S32DS</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="text-slate-500">Issue Pattern</span>
+<span class="mono text-xs text-on-surface-variant">S32DS-\d+</span>
+</div>
+</div>
+</div>
+</section>
+
+</main>
+
+<!-- Footer -->
+<footer class="js-offset-width js-offset-margin w-full border-t border-white/5 py-4 bg-[#0b1326] flex justify-between items-center px-6 md:px-8 md:ml-64 md:w-[calc(100%-16rem)]">
+<span class="text-slate-600 mono text-[10px] uppercase tracking-[0.2em]">(c) 2026 Command Horizon URGP. System Status: Nominal.</span>
+<div class="flex gap-6">
+<a class="text-slate-600 hover:text-slate-300 mono text-[10px] uppercase tracking-[0.2em] transition-all opacity-80 hover:opacity-100 hover:underline" href="#">Privacy Policy</a>
+<a class="text-slate-600 hover:text-slate-300 mono text-[10px] uppercase tracking-[0.2em] transition-all opacity-80 hover:opacity-100 hover:underline" href="#">Terms of Service</a>
+<a class="text-slate-600 hover:text-slate-300 mono text-[10px] uppercase tracking-[0.2em] transition-all opacity-80 hover:opacity-100 hover:underline" href="#">API Status</a>
+</div>
+</footer>
+
+<script>
+(function () {
+  const sidebarToggle = document.getElementById('sidebarToggle');
+  const sidebarToggleIcon = document.getElementById('sidebarToggleIcon');
+  if (!sidebarToggle || !sidebarToggleIcon) return;
+  const storageKey = 'urgp.sidebarCollapsed';
+  const applyState = (collapsed) => {
+    document.body.classList.toggle('sidebar-collapsed', collapsed);
+    sidebarToggleIcon.textContent = collapsed ? 'menu' : 'menu_open';
+    sidebarToggle.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+    sidebarToggle.setAttribute('aria-expanded', String(!collapsed));
+  };
+  const savedState = localStorage.getItem(storageKey);
+  applyState(savedState === '1');
+  sidebarToggle.addEventListener('click', () => {
+    const collapsed = !document.body.classList.contains('sidebar-collapsed');
+    applyState(collapsed);
+    localStorage.setItem(storageKey, collapsed ? '1' : '0');
+  });
+})();
+</script>
+</body></html>

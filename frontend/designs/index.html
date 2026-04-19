@@ -290,15 +290,15 @@
     <p>Universal Release Governance Platform — High-fidelity UI designs for the enterprise build lifecycle management console. Version 4.</p>
     <div class="hero-stats">
       <div class="hero-stat">
-        <div class="value">7</div>
+        <div class="value">10</div>
         <div class="label">Screens</div>
       </div>
       <div class="hero-stat">
-        <div class="value">14</div>
+        <div class="value">18</div>
         <div class="label">Page Sections</div>
       </div>
       <div class="hero-stat">
-        <div class="value">v4</div>
+        <div class="value">v5</div>
         <div class="label">Iteration</div>
       </div>
     </div>
@@ -309,7 +309,11 @@
     <div class="nav-flow">
       <div class="flow-title">User Navigation Flow</div>
       <div class="flow-diagram">
-        <div class="flow-node flow-node--active">Release Dashboard</div>
+        <div class="flow-node flow-node--active">Products</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node">Product Releases</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node">Release Builds</div>
         <div class="flow-arrow">→</div>
         <div class="flow-node">Build Detail</div>
         <div class="flow-arrow">→</div>
@@ -318,6 +322,8 @@
         <div class="flow-node">CI/CD & Testing</div>
       </div>
       <div class="flow-diagram" style="margin-top: 16px;">
+        <div class="flow-node">Activity Feed</div>
+        <div class="flow-arrow">·</div>
         <div class="flow-node">Build Comparison (Issues)</div>
         <div class="flow-arrow">→</div>
         <div class="flow-node">Build Comparison (PRs)</div>
@@ -326,32 +332,69 @@
       </div>
     </div>
 
-    <!-- Core Pages -->
-    <div class="section-title">Core Pages — Build Lifecycle</div>
+    <!-- Product & Release Management -->
+    <div class="section-title">Product & Release Management</div>
     <div class="screen-grid">
 
-      <a class="screen-card" href="01-release-dashboard.html" target="_blank">
+      <a class="screen-card" href="00-products.html" target="_blank">
         <div class="card-preview">
-          <iframe src="01-release-dashboard.html" loading="lazy" tabindex="-1"></iframe>
+          <iframe src="00-products.html" loading="lazy" tabindex="-1"></iframe>
         </div>
         <div class="card-body">
-          <div class="card-number">Screen 01</div>
-          <div class="card-title">Release Dashboard</div>
-          <div class="card-desc">Product-level overview showing all release trains (Nightly, Weekly, LTS), recent builds table with status tracking, and KPI performance strip.</div>
+          <div class="card-number">Screen 00</div>
+          <div class="card-title">Products Catalog</div>
+          <div class="card-desc">Platform-wide product listing with release counts, build statistics, and success rates. Entry point for navigating into any product.</div>
           <div class="card-tags">
-            <span class="tag tag--blue">release-trains</span>
-            <span class="tag tag--cyan">builds-table</span>
-            <span class="tag tag--green">kpi-metrics</span>
+            <span class="tag tag--blue">products</span>
+            <span class="tag tag--cyan">catalog</span>
+            <span class="tag tag--green">platform-kpis</span>
           </div>
         </div>
       </a>
 
-      <a class="screen-card" href="02-build-detail-packages.html" target="_blank">
+      <a class="screen-card" href="01-product-releases.html" target="_blank">
         <div class="card-preview">
-          <iframe src="02-build-detail-packages.html" loading="lazy" tabindex="-1"></iframe>
+          <iframe src="01-product-releases.html" loading="lazy" tabindex="-1"></iframe>
+        </div>
+        <div class="card-body">
+          <div class="card-number">Screen 01</div>
+          <div class="card-title">Product Releases</div>
+          <div class="card-desc">All versioned releases for a product (e.g., S32 DS 3.6.8 RFP, 3.6.7 CD). Shows release status, timeline, and Git/Issue tracker config.</div>
+          <div class="card-tags">
+            <span class="tag tag--blue">releases</span>
+            <span class="tag tag--cyan">timeline</span>
+            <span class="tag tag--green">release-types</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="screen-card" href="02-release-builds.html" target="_blank">
+        <div class="card-preview">
+          <iframe src="02-release-builds.html" loading="lazy" tabindex="-1"></iframe>
         </div>
         <div class="card-body">
           <div class="card-number">Screen 02</div>
+          <div class="card-title">Release Builds</div>
+          <div class="card-desc">All builds within a release filtered by type (Nightly, Weekly, Release Candidate, Hotfix). Build status, changes, and pagination.</div>
+          <div class="card-tags">
+            <span class="tag tag--blue">build-types</span>
+            <span class="tag tag--cyan">nightly-weekly-rc</span>
+            <span class="tag tag--green">filters</span>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Core Pages -->
+    <div class="section-title">Core Pages — Build Lifecycle</div>
+    <div class="screen-grid">
+
+      <a class="screen-card" href="03-build-detail-packages.html" target="_blank">
+        <div class="card-preview">
+          <iframe src="03-build-detail-packages.html" loading="lazy" tabindex="-1"></iframe>
+        </div>
+        <div class="card-body">
+          <div class="card-number">Screen 03</div>
           <div class="card-title">Build Detail — Package Management</div>
           <div class="card-desc">Full build view with lifecycle timeline, expandable package cards showing repos, commits, PRs, and Jira issues per package.</div>
           <div class="card-tags">
@@ -362,12 +405,12 @@
         </div>
       </a>
 
-      <a class="screen-card" href="03-package-detail.html" target="_blank">
+      <a class="screen-card" href="04-package-detail.html" target="_blank">
         <div class="card-preview">
-          <iframe src="03-package-detail.html" loading="lazy" tabindex="-1"></iframe>
+          <iframe src="04-package-detail.html" loading="lazy" tabindex="-1"></iframe>
         </div>
         <div class="card-body">
-          <div class="card-number">Screen 03</div>
+          <div class="card-number">Screen 04</div>
           <div class="card-title">Package Detail — Source & Changes</div>
           <div class="card-desc">Deep-dive into a single package: repository commits, pull requests with Jira links, and issue tracking with priority labels.</div>
           <div class="card-tags">
@@ -378,12 +421,12 @@
         </div>
       </a>
 
-      <a class="screen-card" href="05-package-cicd-testing.html" target="_blank">
+      <a class="screen-card" href="06-package-cicd-testing.html" target="_blank">
         <div class="card-preview">
-          <iframe src="05-package-cicd-testing.html" loading="lazy" tabindex="-1"></iframe>
+          <iframe src="06-package-cicd-testing.html" loading="lazy" tabindex="-1"></iframe>
         </div>
         <div class="card-body">
-          <div class="card-number">Screen 04</div>
+          <div class="card-number">Screen 05</div>
           <div class="card-title">Package Detail — CI/CD & Testing</div>
           <div class="card-desc">Jenkins build info, live build log console, test results breakdown (unit/integration/smoke), and artifact SHA-256 verification.</div>
           <div class="card-tags">
@@ -396,15 +439,31 @@
     </div>
 
     <!-- Comparison & Traceability -->
-    <div class="section-title">Comparison & Traceability</div>
+    <div class="section-title">Activity, Comparison & Traceability</div>
     <div class="screen-grid">
 
-      <a class="screen-card" href="04-build-comparison-issues.html" target="_blank">
+      <a class="screen-card" href="09-activity.html" target="_blank">
         <div class="card-preview">
-          <iframe src="04-build-comparison-issues.html" loading="lazy" tabindex="-1"></iframe>
+          <iframe src="09-activity.html" loading="lazy" tabindex="-1"></iframe>
         </div>
         <div class="card-body">
-          <div class="card-number">Screen 05</div>
+          <div class="card-number">Screen 06</div>
+          <div class="card-title">Activity Feed</div>
+          <div class="card-desc">Cross-product real-time view of active builds with progress, recent build history table, alerts panel, and per-product weekly heatmaps.</div>
+          <div class="card-tags">
+            <span class="tag tag--blue">active-builds</span>
+            <span class="tag tag--cyan">alerts</span>
+            <span class="tag tag--green">heatmap</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="screen-card" href="05-build-comparison-issues.html" target="_blank">
+        <div class="card-preview">
+          <iframe src="05-build-comparison-issues.html" loading="lazy" tabindex="-1"></iframe>
+        </div>
+        <div class="card-body">
+          <div class="card-number">Screen 07</div>
           <div class="card-title">Build Comparison — Jira Issues</div>
           <div class="card-desc">Side-by-side build diff focused on Jira issues grouped by priority, with nested PR tables and package change indicators.</div>
           <div class="card-tags">
@@ -415,12 +474,12 @@
         </div>
       </a>
 
-      <a class="screen-card" href="06-build-comparison-prs-packages.html" target="_blank">
+      <a class="screen-card" href="07-build-comparison-prs-packages.html" target="_blank">
         <div class="card-preview">
-          <iframe src="06-build-comparison-prs-packages.html" loading="lazy" tabindex="-1"></iframe>
+          <iframe src="07-build-comparison-prs-packages.html" loading="lazy" tabindex="-1"></iframe>
         </div>
         <div class="card-body">
-          <div class="card-number">Screen 06</div>
+          <div class="card-number">Screen 08</div>
           <div class="card-title">Build Comparison — PRs & Package Changes</div>
           <div class="card-desc">PRs grouped by Jira issue with repo/package mapping. Package additions (green), removals (red), and updates summary.</div>
           <div class="card-tags">
@@ -431,12 +490,12 @@
         </div>
       </a>
 
-      <a class="screen-card" href="07-build-detail-whatsnew-traceability.html" target="_blank">
+      <a class="screen-card" href="08-build-detail-whatsnew-traceability.html" target="_blank">
         <div class="card-preview">
-          <iframe src="07-build-detail-whatsnew-traceability.html" loading="lazy" tabindex="-1"></iframe>
+          <iframe src="08-build-detail-whatsnew-traceability.html" loading="lazy" tabindex="-1"></iframe>
         </div>
         <div class="card-body">
-          <div class="card-number">Screen 07</div>
+          <div class="card-number">Screen 09</div>
           <div class="card-title">Build Detail — What's New & Traceability Graph</div>
           <div class="card-desc">Issues matrix with expandable rows, PR summary by repo, and visual traceability graph (Build → Packages → Repos → Commits → PRs → Issues).</div>
           <div class="card-tags">
@@ -450,7 +509,7 @@
   </div>
 
   <footer class="footer">
-    URGP — Universal Release Governance Platform · Forge Governance Design System · v4 · 2026
+    URGP — Universal Release Governance Platform · Forge Governance Design System · v5 · 2026
   </footer>
 
 </body>

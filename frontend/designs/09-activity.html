@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Command Horizon | Activity</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-variant": "#2d3449",
+                    "on-secondary-fixed-variant": "#3c475a",
+                    "on-primary": "#002a78",
+                    "surface-bright": "#31394d",
+                    "inverse-primary": "#0053db",
+                    "tertiary-container": "#00788c",
+                    "on-tertiary-fixed": "#001f26",
+                    "outline-variant": "#434655",
+                    "on-surface-variant": "#c3c6d7",
+                    "error-container": "#93000a",
+                    "on-primary-fixed": "#00174b",
+                    "tertiary-fixed": "#acedff",
+                    "on-surface": "#dae2fd",
+                    "secondary-container": "#3e495d",
+                    "secondary-fixed": "#d8e3fb",
+                    "secondary": "#bcc7de",
+                    "surface-dim": "#0b1326",
+                    "on-secondary-container": "#aeb9d0",
+                    "surface-container-highest": "#2d3449",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "primary-container": "#2563eb",
+                    "on-tertiary": "#003640",
+                    "error": "#ffb4ab",
+                    "on-error": "#690005",
+                    "on-tertiary-fixed-variant": "#004e5c",
+                    "on-secondary": "#263143",
+                    "tertiary": "#4cd7f6",
+                    "inverse-on-surface": "#283044",
+                    "outline": "#8d90a0",
+                    "inverse-surface": "#dae2fd",
+                    "surface-tint": "#b4c5ff",
+                    "on-tertiary-container": "#d7f6ff",
+                    "background": "#0b1326",
+                    "surface-container-lowest": "#060e20",
+                    "surface-container-low": "#131b2e",
+                    "secondary-fixed-dim": "#bcc7de",
+                    "surface-container-high": "#222a3d",
+                    "on-primary-container": "#eeefff",
+                    "tertiary-fixed-dim": "#4cd7f6",
+                    "surface-container": "#171f33",
+                    "primary-fixed": "#dbe1ff",
+                    "on-background": "#dae2fd",
+                    "primary": "#b4c5ff",
+                    "surface": "#0b1326",
+                    "on-error-container": "#ffdad6",
+                    "on-secondary-fixed": "#111c2d"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Inter", "sans-serif"],
+                    "body": ["Inter", "sans-serif"],
+                    "label": ["JetBrains Mono", "monospace"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { background-color: #0b1326; color: #dae2fd; font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        @media (min-width: 768px) {
+            :root {
+                --sidebar-expanded-width: 16rem;
+                --sidebar-collapsed-width: 5rem;
+            }
+            .js-sidebar { width: var(--sidebar-expanded-width); overflow: hidden; transition: width 220ms ease; }
+            .js-offset-left { transition: left 220ms ease; }
+            .js-offset-margin { transition: margin-left 220ms ease; }
+            .js-offset-width { transition: width 220ms ease; }
+            body.sidebar-collapsed .js-sidebar { width: var(--sidebar-collapsed-width); }
+            body.sidebar-collapsed .js-offset-left { left: var(--sidebar-collapsed-width) !important; }
+            body.sidebar-collapsed .js-offset-margin { margin-left: var(--sidebar-collapsed-width) !important; }
+            body.sidebar-collapsed .js-offset-width { width: calc(100% - var(--sidebar-collapsed-width)) !important; }
+            body.sidebar-collapsed .js-sidebar .js-sidebar-brand { justify-content: center; padding-left: 0; padding-right: 0; }
+            body.sidebar-collapsed .js-sidebar .js-sidebar-meta { display: none; }
+            body.sidebar-collapsed .js-sidebar nav a,
+            body.sidebar-collapsed .js-sidebar .mt-auto a { justify-content: center; padding-left: 0.75rem; padding-right: 0.75rem; }
+            body.sidebar-collapsed .js-sidebar nav a span:not(.material-symbols-outlined),
+            body.sidebar-collapsed .js-sidebar .mt-auto a span:not(.material-symbols-outlined) { display: none; }
+            body.sidebar-collapsed .js-sidebar .js-sidebar-primary-btn { width: 2.5rem; height: 2.5rem; margin-left: auto; margin-right: auto; padding: 0; justify-content: center; }
+            body.sidebar-collapsed .js-sidebar .js-sidebar-primary-btn .js-sidebar-label { display: none; }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface flex flex-col min-h-screen selection:bg-primary/30">
+<!-- Sidebar -->
+<aside class="js-sidebar fixed left-0 top-0 h-screen w-64 bg-[#131b2e] border-r border-[#434655]/20 z-[60] hidden md:flex flex-col pt-20 pb-6 px-4">
+<div class="js-sidebar-brand flex items-center gap-3 mb-8 px-4">
+<div class="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container">rocket_launch</span>
+</div>
+<div class="js-sidebar-meta">
+<h3 class="font-bold text-on-surface leading-tight">Mission Control</h3>
+<p class="text-xs text-on-surface/50 mono">Operator 01</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg transition-colors duration-150" href="00-products.html">
+<span class="material-symbols-outlined">apps</span>
+<span class="font-medium text-sm tracking-wide">Products</span>
+</a>
+<a class="bg-[#222a3d] text-[#dae2fd] rounded-lg px-4 py-3 flex items-center gap-3" href="09-activity.html">
+<span class="material-symbols-outlined text-[#2563eb]">monitoring</span>
+<span class="font-medium text-sm tracking-wide">Activity</span>
+</a>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg transition-colors duration-150" href="05-build-comparison-issues.html">
+<span class="material-symbols-outlined">compare_arrows</span>
+<span class="font-medium text-sm tracking-wide">Comparisons</span>
+</a>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">bar_chart</span>
+<span class="font-medium text-sm tracking-wide">Reports</span>
+</a>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-medium text-sm tracking-wide">Settings</span>
+</a>
+</nav>
+<div class="mt-auto space-y-1">
+<button class="js-sidebar-primary-btn w-full mb-6 py-3 px-4 bg-primary-container text-on-primary-container rounded-lg font-bold text-sm active:scale-95 duration-200 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-base">add_circle</span>
+<span class="js-sidebar-label">New Build</span>
+</button>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-medium text-sm tracking-wide">Support</span>
+</a>
+<a class="text-[#dae2fd]/50 px-4 py-3 flex items-center gap-3 hover:bg-[#2d3449] hover:text-[#dae2fd] rounded-lg" href="#">
+<span class="material-symbols-outlined">code</span>
+<span class="font-medium text-sm tracking-wide">API</span>
+</a>
+</div>
+</aside>
+
+<!-- Top Bar -->
+<header class="js-offset-left fixed top-0 left-0 right-0 md:left-64 z-50 bg-[#131b2e]/80 backdrop-blur-xl border-b border-[#434655]/20 flex justify-between items-center px-6 h-16">
+<div class="flex items-center gap-8">
+<button aria-label="Collapse sidebar" class="hidden md:inline-flex w-9 h-9 items-center justify-center rounded-lg border border-outline-variant/20 text-on-surface/70 hover:text-on-surface hover:bg-surface-container-high transition-colors" id="sidebarToggle" type="button">
+<span class="material-symbols-outlined text-lg" id="sidebarToggleIcon">menu_open</span>
+</button>
+<span class="text-xl font-black text-[#dae2fd] tracking-tight">Command Horizon</span>
+<div class="hidden lg:flex items-center gap-2 bg-[#222a3d] px-3 py-1.5 rounded-lg border border-outline-variant/20">
+<span class="material-symbols-outlined text-sm text-on-surface/40">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm text-on-surface placeholder:text-on-surface/30 w-64 mono" placeholder="Search products, builds, or packages..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden md:flex items-center gap-4 border-r border-outline-variant/20 pr-6">
+<a class="text-[#dae2fd]/60 font-medium text-sm hover:text-[#2563eb]" href="#">Audit Logs</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative text-[#dae2fd]/60 hover:text-[#dae2fd]">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="text-[#dae2fd]/60 hover:text-[#dae2fd]">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="hidden sm:flex items-center gap-3 ml-2">
+<div class="text-right">
+<p class="text-xs font-bold">Admin User</p>
+<p class="text-[10px] text-on-surface/50 mono">PLATFORM_ADMIN</p>
+</div>
+<div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center ring-2 ring-[#2563eb]/20">
+<span class="material-symbols-outlined text-sm text-on-primary-container">person</span>
+</div>
+</div>
+</div>
+</div>
+</header>
+
+<!-- Main Content -->
+<main class="js-offset-margin flex-1 md:ml-64 pt-24 px-8 pb-12 min-h-screen">
+<!-- Breadcrumbs & Header -->
+<header class="mb-8">
+<nav class="flex items-center gap-2 text-slate-500 text-[10px] mono uppercase tracking-widest mb-4">
+<span class="text-on-surface">Activity</span>
+</nav>
+<div class="flex justify-between items-end">
+<div>
+<h1 class="text-3xl font-extrabold tracking-tighter text-on-surface mb-1">Activity Feed</h1>
+<p class="text-slate-500 font-medium">Real-time view of builds, deployments, and events across all products.</p>
+</div>
+<div class="flex gap-3">
+<div class="flex items-center gap-2 bg-surface-container-high px-3 py-2 rounded-lg border border-outline-variant/20">
+<span class="material-symbols-outlined text-sm text-on-surface/40">calendar_today</span>
+<select class="bg-transparent border-none focus:ring-0 text-sm text-on-surface mono cursor-pointer">
+<option>Last 24 hours</option>
+<option>Last 7 days</option>
+<option selected>Last 30 days</option>
+<option>Custom range</option>
+</select>
+</div>
+<button class="bg-surface-container-high text-on-surface px-4 py-2 rounded-lg font-semibold text-sm hover:bg-surface-container-highest transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-base">filter_list</span>
+Filter
+</button>
+</div>
+</div>
+</header>
+
+<!-- Live Metrics Strip -->
+<section class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-10">
+<div class="bg-surface-container-high rounded-xl p-5">
+<span class="text-slate-500 mono text-[10px] uppercase tracking-widest mb-1 block">Active Builds</span>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-extrabold text-on-surface">3</span>
+<span class="flex items-center gap-1 text-tertiary text-[10px] mono">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span> Running
+</span>
+</div>
+</div>
+<div class="bg-surface-container-high rounded-xl p-5">
+<span class="text-slate-500 mono text-[10px] uppercase tracking-widest mb-1 block">Builds Today</span>
+<span class="text-2xl font-extrabold text-on-surface">14</span>
+<span class="text-tertiary text-[10px] mono mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">trending_up</span> +3 vs yesterday
+</span>
+</div>
+<div class="bg-surface-container-high rounded-xl p-5">
+<span class="text-slate-500 mono text-[10px] uppercase tracking-widest mb-1 block">Success Rate (24h)</span>
+<span class="text-2xl font-extrabold text-on-surface">92.9%</span>
+<span class="text-primary text-[10px] mono mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">check_circle</span> 13/14 passed
+</span>
+</div>
+<div class="bg-surface-container-high rounded-xl p-5">
+<span class="text-slate-500 mono text-[10px] uppercase tracking-widest mb-1 block">Failed Builds</span>
+<span class="text-2xl font-extrabold text-error">1</span>
+<span class="text-error/70 text-[10px] mono mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">error</span> S32 Flash Tool
+</span>
+</div>
+<div class="bg-surface-container-high rounded-xl p-5">
+<span class="text-slate-500 mono text-[10px] uppercase tracking-widest mb-1 block">Avg Build Time</span>
+<span class="text-2xl font-extrabold text-on-surface">47m</span>
+<span class="text-tertiary text-[10px] mono mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">speed</span> -8% vs avg
+</span>
+</div>
+</section>
+
+<!-- Two Column Layout: Active Builds + Recent Timeline -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-10">
+
+<!-- Active / In-Progress Builds (left 2/3) -->
+<section class="xl:col-span-2 space-y-4">
+<div class="flex items-center justify-between mb-2">
+<h2 class="text-lg font-bold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-xl">pending</span>
+Active Builds
+</h2>
+<span class="text-[10px] mono text-on-surface/50 uppercase tracking-widest">3 running</span>
+</div>
+
+<!-- Active Build Card 1 -->
+<div class="bg-surface-container-high rounded-xl p-5 border border-tertiary/20">
+<div class="flex items-start justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-tertiary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary">nights_stay</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-bold text-on-surface">Build #260419-N</span>
+<span class="px-2 py-0.5 bg-[#004e5c]/40 text-tertiary text-[10px] mono rounded uppercase tracking-widest">Nightly</span>
+</div>
+<span class="text-slate-500 text-xs">S32 Design Studio · S32 DS 3.6.8 RFP</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="flex items-center gap-1.5 px-3 py-1 bg-tertiary-container/30 text-tertiary text-xs font-bold rounded-full border border-tertiary/20">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+Building
+</span>
+<span class="text-slate-500 mono text-[10px]">12m 34s</span>
+</div>
+</div>
+<div class="w-full bg-surface-container rounded-full h-2 mb-3">
+<div class="bg-tertiary/60 h-2 rounded-full transition-all" style="width: 65%"></div>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-4 text-[10px] mono text-slate-500">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">inventory_2</span> 24/37 packages</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">science</span> 1,240/2,100 tests</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">person</span> jenkins-ci</span>
+</div>
+<a class="text-primary text-xs font-semibold hover:underline flex items-center gap-1" href="03-build-detail-packages.html">
+View Details <span class="material-symbols-outlined text-xs">arrow_forward</span>
+</a>
+</div>
+</div>
+
+<!-- Active Build Card 2 -->
+<div class="bg-surface-container-high rounded-xl p-5 border border-primary/20">
+<div class="flex items-start justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">verified</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-bold text-on-surface">Build #260419-RC3</span>
+<span class="px-2 py-0.5 bg-[#004e5c]/40 text-tertiary text-[10px] mono rounded uppercase tracking-widest">RC</span>
+</div>
+<span class="text-slate-500 text-xs">S32 Configuration Tool · SCT 2.1.0 RFP</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="flex items-center gap-1.5 px-3 py-1 bg-tertiary-container/30 text-tertiary text-xs font-bold rounded-full border border-tertiary/20">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+Testing
+</span>
+<span class="text-slate-500 mono text-[10px]">28m 11s</span>
+</div>
+</div>
+<div class="w-full bg-surface-container rounded-full h-2 mb-3">
+<div class="bg-primary/60 h-2 rounded-full transition-all" style="width: 82%"></div>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-4 text-[10px] mono text-slate-500">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">inventory_2</span> 11/11 packages</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">science</span> 890/980 tests</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">person</span> jenkins-ci</span>
+</div>
+<a class="text-primary text-xs font-semibold hover:underline flex items-center gap-1" href="03-build-detail-packages.html">
+View Details <span class="material-symbols-outlined text-xs">arrow_forward</span>
+</a>
+</div>
+</div>
+
+<!-- Active Build Card 3 -->
+<div class="bg-surface-container-high rounded-xl p-5 border border-secondary/20">
+<div class="flex items-start justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary">calendar_view_week</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-bold text-on-surface">Build #260419-W</span>
+<span class="px-2 py-0.5 bg-secondary-container/40 text-secondary text-[10px] mono rounded uppercase tracking-widest">Weekly</span>
+</div>
+<span class="text-slate-500 text-xs">RTD · RTD 4.0.2 CD</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="flex items-center gap-1.5 px-3 py-1 bg-tertiary-container/30 text-tertiary text-xs font-bold rounded-full border border-tertiary/20">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+Packaging
+</span>
+<span class="text-slate-500 mono text-[10px]">6m 02s</span>
+</div>
+</div>
+<div class="w-full bg-surface-container rounded-full h-2 mb-3">
+<div class="bg-secondary/60 h-2 rounded-full transition-all" style="width: 45%"></div>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-4 text-[10px] mono text-slate-500">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">inventory_2</span> 8/19 packages</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">science</span> Queued</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">person</span> cron-scheduler</span>
+</div>
+<a class="text-primary text-xs font-semibold hover:underline flex items-center gap-1" href="03-build-detail-packages.html">
+View Details <span class="material-symbols-outlined text-xs">arrow_forward</span>
+</a>
+</div>
+</div>
+</section>
+
+<!-- Recent Alerts / Notifications (right 1/3) -->
+<section class="space-y-4">
+<div class="flex items-center justify-between mb-2">
+<h2 class="text-lg font-bold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-error text-xl">notifications_active</span>
+Alerts
+</h2>
+<a class="text-primary text-xs font-semibold hover:underline" href="#">View all</a>
+</div>
+<div class="bg-surface-container-high rounded-xl divide-y divide-outline-variant/20">
+<!-- Alert 1 -->
+<div class="p-4 flex gap-3">
+<div class="w-8 h-8 rounded-lg bg-error/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-error text-sm">error</span>
+</div>
+<div class="min-w-0">
+<p class="text-sm font-semibold text-on-surface">Build Failed</p>
+<p class="text-xs text-slate-500 mt-0.5">S32 Flash Tool · Build #260418-N failed at test stage. 3 test suites with errors.</p>
+<span class="text-[10px] mono text-slate-600 mt-1 block">2 hours ago</span>
+</div>
+</div>
+<!-- Alert 2 -->
+<div class="p-4 flex gap-3">
+<div class="w-8 h-8 rounded-lg bg-[#f59e0b]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[#f59e0b] text-sm">warning</span>
+</div>
+<div class="min-w-0">
+<p class="text-sm font-semibold text-on-surface">High Test Failure Rate</p>
+<p class="text-xs text-slate-500 mt-0.5">S32 DS 3.6.8 RFP nightly builds averaging 87% success rate (below 90% threshold).</p>
+<span class="text-[10px] mono text-slate-600 mt-1 block">5 hours ago</span>
+</div>
+</div>
+<!-- Alert 3 -->
+<div class="p-4 flex gap-3">
+<div class="w-8 h-8 rounded-lg bg-tertiary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-tertiary text-sm">info</span>
+</div>
+<div class="min-w-0">
+<p class="text-sm font-semibold text-on-surface">Release Promoted</p>
+<p class="text-xs text-slate-500 mt-0.5">S32 DS 3.6.7 CD promoted to Released status. All RC gates passed.</p>
+<span class="text-[10px] mono text-slate-600 mt-1 block">Yesterday</span>
+</div>
+</div>
+<!-- Alert 4 -->
+<div class="p-4 flex gap-3">
+<div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-primary text-sm">new_releases</span>
+</div>
+<div class="min-w-0">
+<p class="text-sm font-semibold text-on-surface">New Release Created</p>
+<p class="text-xs text-slate-500 mt-0.5">GoldVIP 1.2.0 RFP release created. First nightly build scheduled.</p>
+<span class="text-[10px] mono text-slate-600 mt-1 block">2 days ago</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+
+<!-- Recent Build Activity Table -->
+<section class="mb-10">
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-lg font-bold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">history</span>
+Recent Builds
+</h2>
+<div class="flex gap-2">
+<button class="px-3 py-1.5 bg-primary-container text-on-primary-container text-xs font-bold rounded-lg">All</button>
+<button class="px-3 py-1.5 bg-surface-container-high text-on-surface/60 text-xs font-semibold rounded-lg hover:bg-surface-container-highest transition-colors">Failed</button>
+<button class="px-3 py-1.5 bg-surface-container-high text-on-surface/60 text-xs font-semibold rounded-lg hover:bg-surface-container-highest transition-colors">Succeeded</button>
+</div>
+</div>
+<div class="bg-surface-container-high rounded-xl overflow-hidden">
+<table class="w-full text-sm">
+<thead>
+<tr class="border-b border-outline-variant/20">
+<th class="text-left px-5 py-3 text-[10px] mono uppercase tracking-widest text-slate-500 font-medium">Build</th>
+<th class="text-left px-5 py-3 text-[10px] mono uppercase tracking-widest text-slate-500 font-medium">Product / Release</th>
+<th class="text-left px-5 py-3 text-[10px] mono uppercase tracking-widest text-slate-500 font-medium">Type</th>
+<th class="text-left px-5 py-3 text-[10px] mono uppercase tracking-widest text-slate-500 font-medium">Status</th>
+<th class="text-left px-5 py-3 text-[10px] mono uppercase tracking-widest text-slate-500 font-medium">Duration</th>
+<th class="text-left px-5 py-3 text-[10px] mono uppercase tracking-widest text-slate-500 font-medium">Finished</th>
+<th class="text-right px-5 py-3 text-[10px] mono uppercase tracking-widest text-slate-500 font-medium">Changes</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+<!-- Row 1 - Success -->
+<tr class="hover:bg-surface-container-highest/50 transition-colors cursor-pointer">
+<td class="px-5 py-4">
+<a class="font-bold text-on-surface hover:text-primary mono text-xs" href="03-build-detail-packages.html">#260418-N2</a>
+</td>
+<td class="px-5 py-4">
+<div>
+<span class="text-on-surface text-xs font-medium">S32 Design Studio</span>
+<span class="text-slate-500 text-[10px] block mono">S32 DS 3.6.8 RFP</span>
+</div>
+</td>
+<td class="px-5 py-4">
+<span class="flex items-center gap-1.5 text-xs">
+<span class="material-symbols-outlined text-sm text-primary">nights_stay</span>
+<span class="mono text-slate-400">Nightly</span>
+</span>
+</td>
+<td class="px-5 py-4">
+<span class="flex items-center gap-1.5 px-2.5 py-1 bg-tertiary/10 text-tertiary text-[10px] font-bold rounded-full w-fit">
+<span class="material-symbols-outlined text-xs">check_circle</span> Success
+</span>
+</td>
+<td class="px-5 py-4 mono text-xs text-slate-400">42m 18s</td>
+<td class="px-5 py-4 mono text-xs text-slate-500">Today, 06:12</td>
+<td class="px-5 py-4 text-right">
+<span class="mono text-xs text-slate-400">+12 commits</span>
+</td>
+</tr>
+<!-- Row 2 - Failed -->
+<tr class="hover:bg-surface-container-highest/50 transition-colors cursor-pointer">
+<td class="px-5 py-4">
+<a class="font-bold text-on-surface hover:text-primary mono text-xs" href="03-build-detail-packages.html">#260418-N</a>
+</td>
+<td class="px-5 py-4">
+<div>
+<span class="text-on-surface text-xs font-medium">S32 Flash Tool</span>
+<span class="text-slate-500 text-[10px] block mono">SFT 5.2.1 CD</span>
+</div>
+</td>
+<td class="px-5 py-4">
+<span class="flex items-center gap-1.5 text-xs">
+<span class="material-symbols-outlined text-sm text-primary">nights_stay</span>
+<span class="mono text-slate-400">Nightly</span>
+</span>
+</td>
+<td class="px-5 py-4">
+<span class="flex items-center gap-1.5 px-2.5 py-1 bg-error/10 text-error text-[10px] font-bold rounded-full w-fit">
+<span class="material-symbols-outlined text-xs">cancel</span> Failed
+</span>
+</td>
+<td class="px-5 py-4 mono text-xs text-slate-400">38m 05s</td>
+<td class="px-5 py-4 mono text-xs text-slate-500">Today, 04:30</td>
+<td class="px-5 py-4 text-right">
+<span class="mono text-xs text-slate-400">+5 commits</span>
+</td>
+</tr>
+<!-- Row 3 - Success -->
+<tr class="hover:bg-surface-container-highest/50 transition-colors cursor-pointer">
+<td class="px-5 py-4">
+<a class="font-bold text-on-surface hover:text-primary mono text-xs" href="03-build-detail-packages.html">#260418-W</a>
+</td>
+<td class="px-5 py-4">
+<div>
+<span class="text-on-surface text-xs font-medium">S32 Design Studio</span>
+<span class="text-slate-500 text-[10px] block mono">S32 DS 3.6.8 RFP</span>
+</div>
+</td>
+<td class="px-5 py-4">
+<span class="flex items-center gap-1.5 text-xs">
+<span class="material-symbols-outlined text-sm text-secondary">calendar_view_week</span>
+<span class="mono text-slate-400">Weekly</span>
+</span>
+</td>
+<td class="px-5 py-4">
+<span class="flex items-center gap-1.5 px-2.5 py-1 bg-tertiary/10 text-tertiary text-[10px] font-bold rounded-full w-fit">
+<span class="material-symbols-outlined text-xs">check_circle</span> Success
+</span>
+</td>
+<td class="px-5 py-4 mono text-xs text-slate-400">1h 12m</td>
+<td class="px-5 py-4 mono text-xs text-slate-500">Yesterday, 22:00</td>
+<td class="px-5 py-4 text-right">
+<span class="mono text-xs text-slate-400">+47 commits</span>
+</td>
+</tr>
+<!-- Row 4 - Success -->
+<tr class="hover:bg-surface-container-highest/50 transition-colors cursor-pointer">
+<td class="px-5 py-4">
+<a class="font-bold text-on-surface hover:text-primary mono text-xs" href="03-build-detail-packages.html">#260417-RC2</a>
+</td>
+<td class="px-5 py-4">
+<div>
+<span class="text-on-surface text-xs font-medium">S32 Config Tool</span>
+<span class="text-slate-500 text-[10px] block mono">SCT 2.1.0 RFP</span>
+</div>
+</td>
+<td class="px-5 py-4">
+<span class="flex items-center gap-1.5 text-xs">
+<span class="material-symbols-outlined text-sm text-tertiary">verified</span>
+<span class="mono text-slate-400">RC</span>
+</span>
+</td>
+<td class="px-5 py-4">
+<span class="flex items-center gap-1.5 px-2.5 py-1 bg-tertiary/10 text-tertiary text-[10px] font-bold rounded-full w-fit">
+<span class="material-symbols-outlined text-xs">check_circle</span> Success
+</span>
+</td>
+<td class="px-5 py-4 mono text-xs text-slate-400">55m 30s</td>
+<td class="px-5 py-4 mono text-xs text-slate-500">Yesterday, 18:45</td>
+<td class="px-5 py-4 text-right">
+<span class="mono text-xs text-slate-400">+8 commits</span>
+</td>
+</tr>
+<!-- Row 5 - Success -->
+<tr class="hover:bg-surface-container-highest/50 transition-colors cursor-pointer">
+<td class="px-5 py-4">
+<a class="font-bold text-on-surface hover:text-primary mono text-xs" href="03-build-detail-packages.html">#260417-N</a>
+</td>
+<td class="px-5 py-4">
+<div>
+<span class="text-on-surface text-xs font-medium">RTD</span>
+<span class="text-slate-500 text-[10px] block mono">RTD 4.0.2 CD</span>
+</div>
+</td>
+<td class="px-5 py-4">
+<span class="flex items-center gap-1.5 text-xs">
+<span class="material-symbols-outlined text-sm text-primary">nights_stay</span>
+<span class="mono text-slate-400">Nightly</span>
+</span>
+</td>
+<td class="px-5 py-4">
+<span class="flex items-center gap-1.5 px-2.5 py-1 bg-tertiary/10 text-tertiary text-[10px] font-bold rounded-full w-fit">
+<span class="material-symbols-outlined text-xs">check_circle</span> Success
+</span>
+</td>
+<td class="px-5 py-4 mono text-xs text-slate-400">35m 22s</td>
+<td class="px-5 py-4 mono text-xs text-slate-500">Yesterday, 06:00</td>
+<td class="px-5 py-4 text-right">
+<span class="mono text-xs text-slate-400">+19 commits</span>
+</td>
+</tr>
+<!-- Row 6 - Success -->
+<tr class="hover:bg-surface-container-highest/50 transition-colors cursor-pointer">
+<td class="px-5 py-4">
+<a class="font-bold text-on-surface hover:text-primary mono text-xs" href="03-build-detail-packages.html">#260416-HF1</a>
+</td>
+<td class="px-5 py-4">
+<div>
+<span class="text-on-surface text-xs font-medium">S32 Design Studio</span>
+<span class="text-slate-500 text-[10px] block mono">S32 DS 3.6.7 CD</span>
+</div>
+</td>
+<td class="px-5 py-4">
+<span class="flex items-center gap-1.5 text-xs">
+<span class="material-symbols-outlined text-sm text-error">local_fire_department</span>
+<span class="mono text-slate-400">Hotfix</span>
+</span>
+</td>
+<td class="px-5 py-4">
+<span class="flex items-center gap-1.5 px-2.5 py-1 bg-tertiary/10 text-tertiary text-[10px] font-bold rounded-full w-fit">
+<span class="material-symbols-outlined text-xs">check_circle</span> Success
+</span>
+</td>
+<td class="px-5 py-4 mono text-xs text-slate-400">22m 10s</td>
+<td class="px-5 py-4 mono text-xs text-slate-500">Apr 16, 14:20</td>
+<td class="px-5 py-4 text-right">
+<span class="mono text-xs text-slate-400">+2 commits</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="flex items-center justify-between mt-4">
+<span class="text-slate-500 mono text-[10px]">Showing 6 of 87 builds</span>
+<div class="flex gap-1">
+<button class="w-8 h-8 flex items-center justify-center bg-primary-container text-on-primary-container rounded-lg text-xs font-bold">1</button>
+<button class="w-8 h-8 flex items-center justify-center bg-surface-container-high text-on-surface/60 rounded-lg text-xs font-semibold hover:bg-surface-container-highest transition-colors">2</button>
+<button class="w-8 h-8 flex items-center justify-center bg-surface-container-high text-on-surface/60 rounded-lg text-xs font-semibold hover:bg-surface-container-highest transition-colors">3</button>
+<button class="w-8 h-8 flex items-center justify-center bg-surface-container-high text-on-surface/60 rounded-lg text-xs font-semibold hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+
+<!-- Build Activity by Product (mini heatmap / sparklines) -->
+<section class="mb-10">
+<h2 class="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-primary text-xl">grid_view</span>
+Build Activity by Product
+</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+<!-- Product Activity Card 1 -->
+<div class="bg-surface-container-high rounded-xl p-5">
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-primary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-sm">developer_board</span>
+</div>
+<span class="font-bold text-sm text-on-surface">S32 Design Studio</span>
+</div>
+<span class="text-tertiary text-[10px] mono">42 builds</span>
+</div>
+<div class="flex gap-1 mb-3">
+<div class="flex-1 h-6 bg-tertiary/30 rounded" title="Mon: 3 builds, all passed"></div>
+<div class="flex-1 h-6 bg-tertiary/50 rounded" title="Tue: 5 builds, all passed"></div>
+<div class="flex-1 h-6 bg-tertiary/40 rounded" title="Wed: 4 builds, all passed"></div>
+<div class="flex-1 h-6 bg-error/30 rounded" title="Thu: 3 builds, 1 failed"></div>
+<div class="flex-1 h-6 bg-tertiary/60 rounded" title="Fri: 6 builds, all passed"></div>
+<div class="flex-1 h-6 bg-tertiary/20 rounded" title="Sat: 2 builds, all passed"></div>
+<div class="flex-1 h-6 bg-tertiary/30 rounded" title="Sun: 3 builds, all passed"></div>
+</div>
+<div class="flex items-center justify-between text-[10px] mono text-slate-500">
+<span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+</div>
+<div class="flex items-center gap-3 mt-3 pt-3 border-t border-outline-variant/20">
+<span class="text-[10px] mono text-slate-500">Success: <span class="text-tertiary font-bold">95.2%</span></span>
+<span class="text-[10px] mono text-slate-500">Avg: <span class="text-on-surface font-bold">44m</span></span>
+</div>
+</div>
+
+<!-- Product Activity Card 2 -->
+<div class="bg-surface-container-high rounded-xl p-5">
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-primary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-sm">flash_on</span>
+</div>
+<span class="font-bold text-sm text-on-surface">S32 Flash Tool</span>
+</div>
+<span class="text-error text-[10px] mono">18 builds</span>
+</div>
+<div class="flex gap-1 mb-3">
+<div class="flex-1 h-6 bg-tertiary/30 rounded" title="Mon: 2 builds, all passed"></div>
+<div class="flex-1 h-6 bg-tertiary/40 rounded" title="Tue: 3 builds, all passed"></div>
+<div class="flex-1 h-6 bg-error/40 rounded" title="Wed: 2 builds, 1 failed"></div>
+<div class="flex-1 h-6 bg-tertiary/30 rounded" title="Thu: 2 builds, all passed"></div>
+<div class="flex-1 h-6 bg-error/50 rounded" title="Fri: 3 builds, 1 failed"></div>
+<div class="flex-1 h-6 bg-tertiary/20 rounded" title="Sat: 1 build, passed"></div>
+<div class="flex-1 h-6 bg-error/40 rounded" title="Sun: 1 build, failed"></div>
+</div>
+<div class="flex items-center justify-between text-[10px] mono text-slate-500">
+<span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+</div>
+<div class="flex items-center gap-3 mt-3 pt-3 border-t border-outline-variant/20">
+<span class="text-[10px] mono text-slate-500">Success: <span class="text-error font-bold">83.3%</span></span>
+<span class="text-[10px] mono text-slate-500">Avg: <span class="text-on-surface font-bold">36m</span></span>
+</div>
+</div>
+
+<!-- Product Activity Card 3 -->
+<div class="bg-surface-container-high rounded-xl p-5">
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-primary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-sm">tune</span>
+</div>
+<span class="font-bold text-sm text-on-surface">S32 Config Tool</span>
+</div>
+<span class="text-tertiary text-[10px] mono">15 builds</span>
+</div>
+<div class="flex gap-1 mb-3">
+<div class="flex-1 h-6 bg-tertiary/40 rounded" title="Mon: 2 builds, all passed"></div>
+<div class="flex-1 h-6 bg-tertiary/30 rounded" title="Tue: 2 builds, all passed"></div>
+<div class="flex-1 h-6 bg-tertiary/50 rounded" title="Wed: 3 builds, all passed"></div>
+<div class="flex-1 h-6 bg-tertiary/30 rounded" title="Thu: 2 builds, all passed"></div>
+<div class="flex-1 h-6 bg-tertiary/40 rounded" title="Fri: 2 builds, all passed"></div>
+<div class="flex-1 h-6 bg-tertiary/20 rounded" title="Sat: 1 build, passed"></div>
+<div class="flex-1 h-6 bg-tertiary/30 rounded" title="Sun: 1 build, passed"></div>
+</div>
+<div class="flex items-center justify-between text-[10px] mono text-slate-500">
+<span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+</div>
+<div class="flex items-center gap-3 mt-3 pt-3 border-t border-outline-variant/20">
+<span class="text-[10px] mono text-slate-500">Success: <span class="text-tertiary font-bold">100%</span></span>
+<span class="text-[10px] mono text-slate-500">Avg: <span class="text-on-surface font-bold">52m</span></span>
+</div>
+</div>
+</div>
+</section>
+
+</main>
+
+<!-- Footer -->
+<footer class="js-offset-width js-offset-margin w-full border-t border-white/5 py-4 bg-[#0b1326] flex justify-between items-center px-6 md:px-8 md:ml-64 md:w-[calc(100%-16rem)]">
+<span class="text-slate-600 mono text-[10px] uppercase tracking-[0.2em]">(c) 2026 Command Horizon URGP. System Status: Nominal.</span>
+<div class="flex gap-6">
+<a class="text-slate-600 hover:text-slate-300 mono text-[10px] uppercase tracking-[0.2em] transition-all opacity-80 hover:opacity-100 hover:underline" href="#">Privacy Policy</a>
+<a class="text-slate-600 hover:text-slate-300 mono text-[10px] uppercase tracking-[0.2em] transition-all opacity-80 hover:opacity-100 hover:underline" href="#">Terms of Service</a>
+<a class="text-slate-600 hover:text-slate-300 mono text-[10px] uppercase tracking-[0.2em] transition-all opacity-80 hover:opacity-100 hover:underline" href="#">API Status</a>
+</div>
+</footer>
+
+<script>
+(function () {
+  const sidebarToggle = document.getElementById('sidebarToggle');
+  const sidebarToggleIcon = document.getElementById('sidebarToggleIcon');
+  if (!sidebarToggle || !sidebarToggleIcon) return;
+  const storageKey = 'urgp.sidebarCollapsed';
+  const applyState = (collapsed) => {
+    document.body.classList.toggle('sidebar-collapsed', collapsed);
+    sidebarToggleIcon.textContent = collapsed ? 'menu' : 'menu_open';
+    sidebarToggle.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+    sidebarToggle.setAttribute('aria-expanded', String(!collapsed));
+  };
+  const savedState = localStorage.getItem(storageKey);
+  applyState(savedState === '1');
+  sidebarToggle.addEventListener('click', () => {
+    const collapsed = !document.body.classList.contains('sidebar-collapsed');
+    applyState(collapsed);
+    localStorage.setItem(storageKey, collapsed ? '1' : '0');
+  });
+})();
+</script>
+</body></html>
