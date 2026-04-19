@@ -25,6 +25,7 @@ Read in order for full context:
 | 6 | [Migration Strategy](docs/06-migration-strategy.md) | 4-phase rollout plan from legacy system to URGP |
 | 7 | [Implementation Plan](docs/07-implementation-plan.md) | 61 tasks + 40 tests across 3 phases with timeline and cost estimates |
 | 8 | [Team & Work Plan](docs/08-team-workplan.md) | Team structure, role assignments, work breakdown with task ownership |
+| 9 | [Git Workflow](docs/09-git-workflow.md) | Branching strategy, worktree setup, commit conventions, merge order |
 
 ## Tech Stack
 
