@@ -1,0 +1,1 @@
+"""URGP Git provider integrations."""
