@@ -8,9 +8,7 @@ repeated I/O.
 from __future__ import annotations
 
 import io
-import os
 import tarfile
-import tempfile
 import zipfile
 from pathlib import Path
 from xml.etree.ElementTree import Element, SubElement, tostring
@@ -89,17 +87,27 @@ def sample_content_xml() -> bytes:
     units.set("size", "4")
 
     # Feature group IU
-    _add_iu(units, "com.example.feature.feature.group", "1.0.0.202603300001", [
-        ("org.eclipse.platform.feature.group", "[4.0.0,5.0.0)"),
-    ])
+    _add_iu(
+        units,
+        "com.example.feature.feature.group",
+        "1.0.0.202603300001",
+        [
+            ("org.eclipse.platform.feature.group", "[4.0.0,5.0.0)"),
+        ],
+    )
 
     # Feature jar IU
     _add_iu(units, "com.example.feature.feature.jar", "1.0.0.202603300001", [])
 
     # Plugin IU
-    _add_iu(units, "com.example.plugin", "1.0.0.202603300001", [
-        ("org.eclipse.core.runtime", "[3.0.0,4.0.0)"),
-    ])
+    _add_iu(
+        units,
+        "com.example.plugin",
+        "1.0.0.202603300001",
+        [
+            ("org.eclipse.core.runtime", "[3.0.0,4.0.0)"),
+        ],
+    )
 
     # Another plugin
     _add_iu(units, "com.example.utils", "1.0.0.202603300001", [])

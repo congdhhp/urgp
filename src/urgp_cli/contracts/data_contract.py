@@ -189,4 +189,4 @@ class BuildEventPayload(BaseModel):
         Returns:
             Dict ready for JSON serialization with ISO timestamps and enum values.
         """
-        return self.model_dump(mode="json")  # type: ignore[return-value]
+        return self.model_dump(mode="json")

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -46,7 +46,7 @@ def _make_test_payload(build_id: str = "fallback-test-001") -> BuildEventPayload
                 size_bytes=2048,
             )
         ],
-        timestamp=datetime(2026, 3, 30, 10, 0, 0, tzinfo=timezone.utc),
+        timestamp=datetime(2026, 3, 30, 10, 0, 0, tzinfo=UTC),
     )
 
 
@@ -86,11 +86,13 @@ class TestFallbackFileCreation:
         client = URGPClient("http://localhost:8000", max_retries=3)
         payload = _make_test_payload(build_id="server-err-001")
 
-        mock_post = MagicMock(side_effect=[
-            httpx.Response(500, text="Internal Server Error"),
-            httpx.Response(500, text="Internal Server Error"),
-            httpx.Response(500, text="Internal Server Error"),
-        ])
+        mock_post = MagicMock(
+            side_effect=[
+                httpx.Response(500, text="Internal Server Error"),
+                httpx.Response(500, text="Internal Server Error"),
+                httpx.Response(500, text="Internal Server Error"),
+            ]
+        )
 
         with (
             patch("urgp_cli.transport.client.httpx.post", mock_post),

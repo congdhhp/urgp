@@ -10,8 +10,6 @@ Reference:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
 import pytest
 from pydantic import ValidationError
 
@@ -20,7 +18,6 @@ from urgp_cli.contracts.data_contract import (
     ArtifactTypeEnum,
     BuildEventPayload,
     BuildTypeEnum,
-    CIMetadata,
     CommitHash,
 )
 

@@ -76,91 +76,155 @@ class TestPushParameterValidation:
 
     def test_missing_product_fails(self) -> None:
         """Missing --product exits with error."""
-        result = runner.invoke(app, [
-            "push",
-            "--release", "1.0",
-            "--build-type", "nightly",
-            "--build-id", "001",
-            "--artifact", "README.md",
-            "--commit-repo", "repo",
-            "--commit-hash", "a" * 40,
-            "--api-key", "test-key",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "push",
+                "--release",
+                "1.0",
+                "--build-type",
+                "nightly",
+                "--build-id",
+                "001",
+                "--artifact",
+                "README.md",
+                "--commit-repo",
+                "repo",
+                "--commit-hash",
+                "a" * 40,
+                "--api-key",
+                "test-key",
+            ],
+        )
         assert result.exit_code != 0
 
     def test_missing_release_fails(self) -> None:
         """Missing --release exits with error."""
-        result = runner.invoke(app, [
-            "push",
-            "--product", "test",
-            "--build-type", "nightly",
-            "--build-id", "001",
-            "--artifact", "README.md",
-            "--commit-repo", "repo",
-            "--commit-hash", "a" * 40,
-            "--api-key", "test-key",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "push",
+                "--product",
+                "test",
+                "--build-type",
+                "nightly",
+                "--build-id",
+                "001",
+                "--artifact",
+                "README.md",
+                "--commit-repo",
+                "repo",
+                "--commit-hash",
+                "a" * 40,
+                "--api-key",
+                "test-key",
+            ],
+        )
         assert result.exit_code != 0
 
     def test_invalid_build_type_fails(self) -> None:
         """Invalid --build-type value exits with error."""
-        result = runner.invoke(app, [
-            "push",
-            "--product", "test",
-            "--release", "1.0",
-            "--build-type", "invalid_type",
-            "--build-id", "001",
-            "--artifact", "README.md",
-            "--commit-repo", "repo",
-            "--commit-hash", "a" * 40,
-            "--api-key", "test-key",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "push",
+                "--product",
+                "test",
+                "--release",
+                "1.0",
+                "--build-type",
+                "invalid_type",
+                "--build-id",
+                "001",
+                "--artifact",
+                "README.md",
+                "--commit-repo",
+                "repo",
+                "--commit-hash",
+                "a" * 40,
+                "--api-key",
+                "test-key",
+            ],
+        )
         assert result.exit_code != 0
 
     def test_unpaired_commit_repo_hash_fails(self, tmp_path: object) -> None:
         """Unpaired --commit-repo without matching --commit-hash fails."""
-        result = runner.invoke(app, [
-            "push",
-            "--product", "test",
-            "--release", "1.0",
-            "--build-type", "nightly",
-            "--build-id", "001",
-            "--artifact", "README.md",
-            "--commit-repo", "repo1",
-            "--commit-repo", "repo2",
-            "--commit-hash", "a" * 40,
-            "--api-key", "test-key",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "push",
+                "--product",
+                "test",
+                "--release",
+                "1.0",
+                "--build-type",
+                "nightly",
+                "--build-id",
+                "001",
+                "--artifact",
+                "README.md",
+                "--commit-repo",
+                "repo1",
+                "--commit-repo",
+                "repo2",
+                "--commit-hash",
+                "a" * 40,
+                "--api-key",
+                "test-key",
+            ],
+        )
         # Should fail because 2 repos but only 1 hash
         assert result.exit_code != 0
 
     def test_nonexistent_artifact_fails(self) -> None:
         """Non-existent artifact file exits with error."""
-        result = runner.invoke(app, [
-            "push",
-            "--product", "test",
-            "--release", "1.0",
-            "--build-type", "nightly",
-            "--build-id", "001",
-            "--artifact", "/nonexistent/path/file.zip",
-            "--commit-repo", "repo",
-            "--commit-hash", "a" * 40,
-            "--api-key", "test-key",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "push",
+                "--product",
+                "test",
+                "--release",
+                "1.0",
+                "--build-type",
+                "nightly",
+                "--build-id",
+                "001",
+                "--artifact",
+                "/nonexistent/path/file.zip",
+                "--commit-repo",
+                "repo",
+                "--commit-hash",
+                "a" * 40,
+                "--api-key",
+                "test-key",
+            ],
+        )
         assert result.exit_code != 0
 
     def test_missing_api_key_fails(self) -> None:
         """Missing --api-key exits with error."""
-        result = runner.invoke(app, [
-            "push",
-            "--product", "test",
-            "--release", "1.0",
-            "--build-type", "nightly",
-            "--build-id", "001",
-            "--artifact", "README.md",
-            "--commit-repo", "repo",
-            "--commit-hash", "a" * 40,
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "push",
+                "--product",
+                "test",
+                "--release",
+                "1.0",
+                "--build-type",
+                "nightly",
+                "--build-id",
+                "001",
+                "--artifact",
+                "README.md",
+                "--commit-repo",
+                "repo",
+                "--commit-hash",
+                "a" * 40,
+            ],
+        )
         assert result.exit_code != 0
 
 

@@ -11,7 +11,7 @@ Reference:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import httpx
@@ -44,7 +44,7 @@ def _make_test_payload() -> BuildEventPayload:
                 size_bytes=1024,
             )
         ],
-        timestamp=datetime(2026, 3, 30, 10, 0, 0, tzinfo=timezone.utc),
+        timestamp=datetime(2026, 3, 30, 10, 0, 0, tzinfo=UTC),
     )
 
 
@@ -82,10 +82,12 @@ class TestRetryLogic:
         client = URGPClient("http://localhost:8000", max_retries=3)
         payload = _make_test_payload()
 
-        mock_post = MagicMock(side_effect=[
-            httpx.Response(500, text="Internal Server Error"),
-            httpx.Response(200, json={"status": "accepted"}),
-        ])
+        mock_post = MagicMock(
+            side_effect=[
+                httpx.Response(500, text="Internal Server Error"),
+                httpx.Response(200, json={"status": "accepted"}),
+            ]
+        )
 
         with (
             patch("urgp_cli.transport.client.httpx.post", mock_post),
@@ -102,11 +104,13 @@ class TestRetryLogic:
         client = URGPClient("http://localhost:8000", max_retries=3)
         payload = _make_test_payload()
 
-        mock_post = MagicMock(side_effect=[
-            httpx.Response(500, text="Internal Server Error"),
-            httpx.Response(503, text="Service Unavailable"),
-            httpx.Response(200, json={"status": "accepted"}),
-        ])
+        mock_post = MagicMock(
+            side_effect=[
+                httpx.Response(500, text="Internal Server Error"),
+                httpx.Response(503, text="Service Unavailable"),
+                httpx.Response(200, json={"status": "accepted"}),
+            ]
+        )
 
         with (
             patch("urgp_cli.transport.client.httpx.post", mock_post),
@@ -123,11 +127,13 @@ class TestRetryLogic:
         client = URGPClient("http://localhost:8000", max_retries=3)
         payload = _make_test_payload()
 
-        mock_post = MagicMock(side_effect=[
-            httpx.Response(500, text="Server Error"),
-            httpx.Response(500, text="Server Error"),
-            httpx.Response(500, text="Server Error"),
-        ])
+        mock_post = MagicMock(
+            side_effect=[
+                httpx.Response(500, text="Server Error"),
+                httpx.Response(500, text="Server Error"),
+                httpx.Response(500, text="Server Error"),
+            ]
+        )
 
         with (
             patch("urgp_cli.transport.client.httpx.post", mock_post),
