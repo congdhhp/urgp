@@ -181,4 +181,4 @@ def get_settings() -> URGPSettings:
     Raises:
         pydantic.ValidationError: If required settings are missing or invalid.
     """
-    return URGPSettings()  # type: ignore[call-arg]
+    return URGPSettings()

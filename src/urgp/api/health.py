@@ -85,7 +85,7 @@ async def readiness_check(response: Response) -> dict[str, Any]:
         settings = get_settings()
         r = aioredis.from_url(str(settings.redis_url), socket_timeout=5)
         await r.ping()
-        await r.aclose()
+        await r.close()
         checks["redis"] = {"status": "healthy"}
     except Exception as e:
         checks["redis"] = {"status": "unhealthy", "error": str(e)}

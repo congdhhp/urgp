@@ -48,6 +48,7 @@ commit_issues = Table(
 # ORM Models
 # ─────────────────────────────────────────────
 
+
 class Commit(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Commit entity.
 
@@ -56,9 +57,7 @@ class Commit(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """
 
     __tablename__ = "commits"
-    __table_args__ = (
-        Index("ix_commits_hash", "hash", unique=True),
-    )
+    __table_args__ = (Index("ix_commits_hash", "hash", unique=True),)
 
     hash: Mapped[str] = mapped_column(String(40), nullable=False, unique=True)  # SHA-1 hex
     repository: Mapped[str] = mapped_column(String(500), nullable=False)
@@ -74,9 +73,7 @@ class Commit(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     pull_requests: Mapped[list[PullRequest]] = relationship(
         "PullRequest", secondary=commit_prs, back_populates="commits"
     )
-    issues: Mapped[list[Issue]] = relationship(
-        "Issue", secondary=commit_issues, back_populates="commits"
-    )
+    issues: Mapped[list[Issue]] = relationship("Issue", secondary=commit_issues, back_populates="commits")
 
     def __repr__(self) -> str:
         return f"<Commit(hash='{self.hash[:8]}...', repo='{self.repository}')>"
@@ -100,9 +97,7 @@ class PullRequest(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
 
     # Relationships
-    commits: Mapped[list[Commit]] = relationship(
-        "Commit", secondary=commit_prs, back_populates="pull_requests"
-    )
+    commits: Mapped[list[Commit]] = relationship("Commit", secondary=commit_prs, back_populates="pull_requests")
 
     def __repr__(self) -> str:
         return f"<PullRequest(external_id='{self.external_id}', repo='{self.repository}')>"
@@ -122,13 +117,11 @@ class Issue(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     status: Mapped[str | None] = mapped_column(String(100), nullable=True)
     priority: Mapped[str | None] = mapped_column(String(50), nullable=True)  # Critical, Major, Normal, Minor
     assignee: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    labels: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # Array of label strings
+    labels: Mapped[dict[str, object] | None] = mapped_column(JSONB, nullable=True)  # Array of label strings
     url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
 
     # Relationships
-    commits: Mapped[list[Commit]] = relationship(
-        "Commit", secondary=commit_issues, back_populates="issues"
-    )
+    commits: Mapped[list[Commit]] = relationship("Commit", secondary=commit_issues, back_populates="issues")
 
     def __repr__(self) -> str:
         return f"<Issue(external_id='{self.external_id}', tracker='{self.tracker_type}')>"

@@ -59,7 +59,7 @@ class BuildManifest(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # Metadata
     released_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     cli_version: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    ci_metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    ci_metadata: Mapped[dict[str, object] | None] = mapped_column(JSONB, nullable=True)
 
     # Relationships
     product: Mapped[Product] = relationship("Product", back_populates="manifests")
@@ -67,9 +67,7 @@ class BuildManifest(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     artifacts: Mapped[list[Artifact]] = relationship(
         "Artifact", back_populates="manifest", cascade="all, delete-orphan"
     )
-    commits: Mapped[list[Commit]] = relationship(
-        "Commit", secondary="build_commits", back_populates="manifests"
-    )
+    commits: Mapped[list[Commit]] = relationship("Commit", secondary="build_commits", back_populates="manifests")
     notifications: Mapped[list[Notification]] = relationship(
         "Notification", back_populates="manifest", cascade="all, delete-orphan"
     )
@@ -85,9 +83,7 @@ class Artifact(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """
 
     __tablename__ = "artifacts"
-    __table_args__ = (
-        Index("ix_artifacts_sha256", "sha256_checksum"),
-    )
+    __table_args__ = (Index("ix_artifacts_sha256", "sha256_checksum"),)
 
     manifest_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -101,7 +97,7 @@ class Artifact(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     size_bytes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 
     # Technology-specific metadata (e.g., Eclipse P2 features, OCI layers)
-    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
+    metadata_: Mapped[dict[str, object] | None] = mapped_column("metadata", JSONB, nullable=True)
 
     # Relationships
     manifest: Mapped[BuildManifest] = relationship("BuildManifest", back_populates="artifacts")

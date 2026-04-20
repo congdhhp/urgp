@@ -27,23 +27,42 @@ def upgrade() -> None:
 
     # ── Enums ──────────────────────────────────────────────
     build_status_enum = sa.Enum(
-        "ingesting", "hydrating", "completed", "testing", "released", "deprecated",
+        "ingesting",
+        "hydrating",
+        "completed",
+        "testing",
+        "released",
+        "deprecated",
         name="build_status",
     )
     artifact_type_enum = sa.Enum(
-        "eclipse_p2", "oci_image", "binary", "npm_tarball", "maven_jar", "python_wheel", "generic",
+        "eclipse_p2",
+        "oci_image",
+        "binary",
+        "npm_tarball",
+        "maven_jar",
+        "python_wheel",
+        "generic",
         name="artifact_type",
     )
     notification_channel_enum = sa.Enum(
-        "email", "webhook",
+        "email",
+        "webhook",
         name="notification_channel",
     )
     build_type_enum = sa.Enum(
-        "nightly", "weekly", "rc", "hotfix",
+        "nightly",
+        "weekly",
+        "rc",
+        "hotfix",
         name="build_type",
     )
     user_role_enum = sa.Enum(
-        "platform_admin", "product_admin", "developer", "tester", "viewer",
+        "platform_admin",
+        "product_admin",
+        "developer",
+        "tester",
+        "viewer",
         name="user_role",
     )
 
@@ -105,8 +124,10 @@ def upgrade() -> None:
         "artifacts",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
         sa.Column(
-            "manifest_id", UUID(as_uuid=True),
-            sa.ForeignKey("build_manifests.id", ondelete="CASCADE"), nullable=False,
+            "manifest_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("build_manifests.id", ondelete="CASCADE"),
+            nullable=False,
         ),
         sa.Column("name", sa.String(500), nullable=False),
         sa.Column("type", artifact_type_enum, nullable=False),
@@ -170,12 +191,16 @@ def upgrade() -> None:
     op.create_table(
         "build_commits",
         sa.Column(
-            "build_id", UUID(as_uuid=True),
-            sa.ForeignKey("build_manifests.id", ondelete="CASCADE"), primary_key=True,
+            "build_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("build_manifests.id", ondelete="CASCADE"),
+            primary_key=True,
         ),
         sa.Column(
-            "commit_id", UUID(as_uuid=True),
-            sa.ForeignKey("commits.id", ondelete="CASCADE"), primary_key=True,
+            "commit_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("commits.id", ondelete="CASCADE"),
+            primary_key=True,
         ),
     )
 
@@ -183,12 +208,16 @@ def upgrade() -> None:
     op.create_table(
         "commit_prs",
         sa.Column(
-            "commit_id", UUID(as_uuid=True),
-            sa.ForeignKey("commits.id", ondelete="CASCADE"), primary_key=True,
+            "commit_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("commits.id", ondelete="CASCADE"),
+            primary_key=True,
         ),
         sa.Column(
-            "pr_id", UUID(as_uuid=True),
-            sa.ForeignKey("pull_requests.id", ondelete="CASCADE"), primary_key=True,
+            "pr_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("pull_requests.id", ondelete="CASCADE"),
+            primary_key=True,
         ),
     )
 
@@ -196,12 +225,16 @@ def upgrade() -> None:
     op.create_table(
         "commit_issues",
         sa.Column(
-            "commit_id", UUID(as_uuid=True),
-            sa.ForeignKey("commits.id", ondelete="CASCADE"), primary_key=True,
+            "commit_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("commits.id", ondelete="CASCADE"),
+            primary_key=True,
         ),
         sa.Column(
-            "issue_id", UUID(as_uuid=True),
-            sa.ForeignKey("issues.id", ondelete="CASCADE"), primary_key=True,
+            "issue_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("issues.id", ondelete="CASCADE"),
+            primary_key=True,
         ),
     )
 
@@ -211,12 +244,16 @@ def upgrade() -> None:
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
         sa.Column("user_id", sa.String(255), nullable=False),
         sa.Column(
-            "product_id", UUID(as_uuid=True),
-            sa.ForeignKey("products.id", ondelete="CASCADE"), nullable=False,
+            "product_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("products.id", ondelete="CASCADE"),
+            nullable=False,
         ),
         sa.Column(
-            "release_id", UUID(as_uuid=True),
-            sa.ForeignKey("releases.id", ondelete="SET NULL"), nullable=True,
+            "release_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("releases.id", ondelete="SET NULL"),
+            nullable=True,
         ),
         sa.Column("channel", notification_channel_enum, nullable=False),
         sa.Column("webhook_url", sa.String(1000), nullable=True),
@@ -230,8 +267,10 @@ def upgrade() -> None:
         "notifications",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
         sa.Column(
-            "manifest_id", UUID(as_uuid=True),
-            sa.ForeignKey("build_manifests.id", ondelete="CASCADE"), nullable=False,
+            "manifest_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("build_manifests.id", ondelete="CASCADE"),
+            nullable=False,
         ),
         sa.Column("channel", notification_channel_enum, nullable=False),
         sa.Column("recipient", sa.String(500), nullable=False),

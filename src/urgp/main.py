@@ -75,11 +75,13 @@ def create_app() -> FastAPI:
     # ── Middleware ─────────────────────────────────────────
     # Request ID middleware (must be added before CORS)
     from urgp.middleware.request_id import RequestIDMiddleware
+
     app.add_middleware(RequestIDMiddleware)
 
     # CORS middleware
     try:
         from urgp.config import get_settings
+
         settings = get_settings()
         cors_origins = settings.cors_origins
     except Exception:
@@ -95,6 +97,7 @@ def create_app() -> FastAPI:
 
     # ── Routers ───────────────────────────────────────────
     from urgp.api.health import router as health_router
+
     app.include_router(health_router)
 
     return app

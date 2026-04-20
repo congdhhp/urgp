@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 async def seed_database() -> None:
     """Seed the database with sample data."""
     from sqlalchemy import select
-    from sqlalchemy.ext.asyncio import AsyncSession
 
     from urgp.config import get_settings
     from urgp.db.session import create_engine, create_session_factory
@@ -28,12 +27,8 @@ async def seed_database() -> None:
     session_factory = create_session_factory(engine)
 
     async with session_factory() as session:
-        session: AsyncSession
-
         # Check if product already exists
-        result = await session.execute(
-            select(Product).where(Product.name == "S32 Design Studio")
-        )
+        result = await session.execute(select(Product).where(Product.name == "S32 Design Studio"))
         existing = result.scalar_one_or_none()
 
         if existing:
@@ -80,6 +75,7 @@ async def seed_database() -> None:
 def main() -> None:
     """Entry point for seed script."""
     from urgp.logging import setup_logging
+
     setup_logging(log_level="INFO", log_format="console")
     asyncio.run(seed_database())
 

@@ -32,10 +32,10 @@ class Product(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Git provider configuration (provider type, repos, credentials)
-    git_config: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    git_config: Mapped[dict[str, object] | None] = mapped_column(JSONB, nullable=True)
 
     # Issue tracker configuration (tracker type, project key, regex, credentials)
-    issue_config: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    issue_config: Mapped[dict[str, object] | None] = mapped_column(JSONB, nullable=True)
 
     # Relationships
     releases: Mapped[list[Release]] = relationship("Release", back_populates="product", cascade="all, delete-orphan")
@@ -59,7 +59,7 @@ class Release(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     __tablename__ = "releases"
 
-    product_id: Mapped[uuid.UUID] = mapped_column(  # type: ignore[name-defined]
+    product_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("products.id", ondelete="CASCADE"),
         nullable=False,

@@ -89,6 +89,9 @@ async def setup_topology(connection: AbstractRobustConnection) -> None:
 
         logger.info(
             "RabbitMQ topology declared: exchanges=[%s, %s], queues=[%s, %s, %s]",
-            EXCHANGE_BUILD_EVENTS, EXCHANGE_DLX,
-            QUEUE_BUILD_PROCESS, QUEUE_BUILD_NOTIFY, QUEUE_DLQ,
+            EXCHANGE_BUILD_EVENTS,
+            EXCHANGE_DLX,
+            QUEUE_BUILD_PROCESS,
+            QUEUE_BUILD_NOTIFY,
+            QUEUE_DLQ,
         )

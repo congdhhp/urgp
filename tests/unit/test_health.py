@@ -42,6 +42,7 @@ async def client() -> AsyncClient:
 # Test: Basic Health Check
 # ─────────────────────────────────────────────
 
+
 class TestHealthEndpoint:
     """Tests for GET /health."""
 
@@ -80,6 +81,7 @@ class TestHealthEndpoint:
 # ─────────────────────────────────────────────
 # Test: Readiness Check (mocked dependencies)
 # ─────────────────────────────────────────────
+
 
 class TestReadinessEndpoint:
     """Tests for GET /health/ready."""

@@ -21,6 +21,7 @@ from urgp.config import URGPSettings
 # Fixtures
 # ─────────────────────────────────────────────
 
+
 def _make_env(overrides: dict[str, str] | None = None) -> dict[str, str]:
     """Create a complete set of valid environment variables."""
     base: dict[str, str] = {
@@ -39,6 +40,7 @@ def _make_env(overrides: dict[str, str] | None = None) -> dict[str, str]:
 # ─────────────────────────────────────────────
 # Test: Valid Configuration
 # ─────────────────────────────────────────────
+
 
 class TestValidConfig:
     """Tests for successful configuration loading."""
@@ -71,12 +73,14 @@ class TestValidConfig:
 
     def test_override_defaults(self) -> None:
         """Environment variables override default values."""
-        env = _make_env({
-            "URGP_LOG_LEVEL": "DEBUG",
-            "URGP_DEBUG": "true",
-            "URGP_SMTP_PORT": "587",
-            "URGP_RATE_LIMIT_READ": "200",
-        })
+        env = _make_env(
+            {
+                "URGP_LOG_LEVEL": "DEBUG",
+                "URGP_DEBUG": "true",
+                "URGP_SMTP_PORT": "587",
+                "URGP_RATE_LIMIT_READ": "200",
+            }
+        )
         with patch.dict(os.environ, env, clear=False):
             settings = URGPSettings()  # type: ignore[call-arg]
 
@@ -87,9 +91,11 @@ class TestValidConfig:
 
     def test_cors_origins_list(self) -> None:
         """CORS origins can be set as a JSON array string."""
-        env = _make_env({
-            "URGP_CORS_ORIGINS": '["http://localhost:3000","http://example.com"]',
-        })
+        env = _make_env(
+            {
+                "URGP_CORS_ORIGINS": '["http://localhost:3000","http://example.com"]',
+            }
+        )
         with patch.dict(os.environ, env, clear=False):
             settings = URGPSettings()  # type: ignore[call-arg]
 
@@ -100,6 +106,7 @@ class TestValidConfig:
 # ─────────────────────────────────────────────
 # Test: Invalid Configuration (Fail-Fast)
 # ─────────────────────────────────────────────
+
 
 class TestInvalidConfig:
     """Tests for configuration validation failures."""
@@ -156,10 +163,12 @@ class TestInvalidConfig:
 
     def test_production_with_debug_fails(self) -> None:
         """Debug mode in production raises ValidationError."""
-        env = _make_env({
-            "URGP_ENVIRONMENT": "production",
-            "URGP_DEBUG": "true",
-        })
+        env = _make_env(
+            {
+                "URGP_ENVIRONMENT": "production",
+                "URGP_DEBUG": "true",
+            }
+        )
         with patch.dict(os.environ, env, clear=False):
             with pytest.raises(ValidationError) as exc_info:
                 URGPSettings()  # type: ignore[call-arg]
@@ -183,6 +192,7 @@ class TestInvalidConfig:
 # ─────────────────────────────────────────────
 # Test: Sensitive Value Masking
 # ─────────────────────────────────────────────
+
 
 class TestMasking:
     """Tests for sensitive value masking in logs."""
