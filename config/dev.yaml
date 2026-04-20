@@ -1,0 +1,6 @@
+# URGP Development Configuration
+# ─────────────────────────────────
+environment: development
+debug: true
+log_level: DEBUG
+log_format: console

@@ -1,0 +1,6 @@
+# URGP Production Configuration
+# ─────────────────────────────────
+environment: production
+debug: false
+log_level: INFO
+log_format: json

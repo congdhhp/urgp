@@ -1,0 +1,6 @@
+# URGP Staging Configuration
+# ─────────────────────────────────
+environment: staging
+debug: false
+log_level: INFO
+log_format: json
