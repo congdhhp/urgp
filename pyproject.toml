@@ -68,6 +68,7 @@ types-redis = "^4.6.0"
 [tool.poetry.scripts]
 urgp-api = "urgp.main:run"
 urgp-worker = "urgp.worker.hydration_worker:run"
+urgp-cli = "urgp_cli.main:app"
 
 [build-system]
 requires = ["poetry-core"]
@@ -110,6 +111,7 @@ select = [
 ]
 ignore = [
     "E501",    # line too long (handled by formatter)
+    "B008",    # function call in defaults — required for Typer CLI parameter declarations
     "SIM117",  # nested with — more readable for test patterns
     "TCH001",  # move app import into type-checking block — conflicts with runtime needs
     "TCH002",  # move third-party import into type-checking block — conflicts with runtime needs
