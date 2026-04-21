@@ -14,12 +14,19 @@ Reference:
 
 from __future__ import annotations
 
+import re
+
 from typer.testing import CliRunner
 
 from urgp_cli import __version__
 from urgp_cli.main import app
 
 runner = CliRunner()
+
+
+def _strip_ansi(text: str) -> str:
+    """Remove ANSI escape sequences from text for reliable assertions."""
+    return re.sub(r"\x1b\[[0-9;]*m", "", text)
 
 
 class TestVersionCommand:
@@ -45,30 +52,33 @@ class TestHelpOutput:
     def test_main_help(self) -> None:
         """Main help shows available commands."""
         result = runner.invoke(app, ["--help"])
+        output = _strip_ansi(result.output)
         assert result.exit_code == 0
-        assert "push" in result.output
-        assert "verify" in result.output
+        assert "push" in output
+        assert "verify" in output
 
     def test_push_help(self) -> None:
         """Push help shows all required parameters."""
         result = runner.invoke(app, ["push", "--help"])
+        output = _strip_ansi(result.output)
         assert result.exit_code == 0
-        assert "--product" in result.output
-        assert "--release" in result.output
-        assert "--build-type" in result.output
-        assert "--build-id" in result.output
-        assert "--adapter" in result.output
-        assert "--artifact" in result.output
-        assert "--commit-repo" in result.output
-        assert "--commit-hash" in result.output
-        assert "--api-key" in result.output
+        assert "--product" in output
+        assert "--release" in output
+        assert "--build-type" in output
+        assert "--build-id" in output
+        assert "--adapter" in output
+        assert "--artifact" in output
+        assert "--commit-repo" in output
+        assert "--commit-hash" in output
+        assert "--api-key" in output
 
     def test_verify_help(self) -> None:
         """Verify help shows required parameters."""
         result = runner.invoke(app, ["verify", "--help"])
+        output = _strip_ansi(result.output)
         assert result.exit_code == 0
-        assert "--build-id" in result.output
-        assert "--api-key" in result.output
+        assert "--build-id" in output
+        assert "--api-key" in output
 
 
 class TestPushParameterValidation:
