@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -30,6 +31,7 @@ logger = logging.getLogger(__name__)
 _MAX_RETRIES = 3
 _BASE_DELAY_SECONDS = 1.0
 _REQUEST_TIMEOUT_SECONDS = 30.0
+_FALLBACK_SAFE_TOKEN_PATTERN = re.compile(r"[^A-Za-z0-9._-]+")
 
 # HTTP status codes that warrant a retry (server-side / transient errors)
 _RETRYABLE_STATUS_CODES = {500, 502, 503, 504}
@@ -218,12 +220,23 @@ class URGPClient:
         Returns:
             PushResult indicating failure with the fallback file path.
         """
-        fallback_filename = f"urgp-fallback-{payload.build_id}.json"
-        fallback_path = Path.cwd() / fallback_filename
+        sanitized_build_id = _FALLBACK_SAFE_TOKEN_PATTERN.sub("-", payload.build_id).strip("-.") or "build"
+        fallback_basename = f"urgp-fallback-{sanitized_build_id}"
+        fallback_path: Path | None = None
 
         try:
-            with open(fallback_path, "w", encoding="utf-8") as f:
-                json.dump(json_payload, f, indent=2, default=str)
+            counter = 0
+            while True:
+                suffix = "" if counter == 0 else f"-{counter}"
+                candidate = Path.cwd() / f"{fallback_basename}{suffix}.json"
+                try:
+                    with open(candidate, "x", encoding="utf-8") as f:
+                        json.dump(json_payload, f, indent=2, default=str)
+                    fallback_path = candidate
+                    break
+                except FileExistsError:
+                    counter += 1
+
             logger.info("Fallback payload written to: %s", fallback_path)
         except OSError as exc:
             logger.error("Failed to write fallback file: %s", exc)
@@ -237,7 +250,7 @@ class URGPClient:
             success=False,
             status_code=None,
             message=f"All retries failed ({last_error}). Payload saved to: {fallback_path}",
-            fallback_path=str(fallback_path),
+            fallback_path=str(fallback_path) if fallback_path is not None else None,
         )
 
 

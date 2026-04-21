@@ -19,6 +19,7 @@ from __future__ import annotations
 import datetime
 from pathlib import Path
 from typing import Optional
+from urllib.parse import quote
 
 import typer
 from rich.progress import BarColumn, Progress, TextColumn, TimeRemainingColumn
@@ -49,6 +50,29 @@ from urgp_cli.transport.client import URGPClient
 
 # Default API URL (can be overridden)
 _DEFAULT_API_URL = "http://localhost:8000"
+
+
+def _resolve_artifact_type(adapter_type: str) -> ArtifactTypeEnum:
+    """Resolve an adapter type to the corresponding artifact enum."""
+    normalized = adapter_type.strip().lower()
+    try:
+        return ArtifactTypeEnum(normalized)
+    except ValueError as exc:
+        available = ", ".join(artifact_type.value for artifact_type in ArtifactTypeEnum)
+        msg = f"Adapter reported unsupported artifact type '{adapter_type}'. Supported types: {available}"
+        raise ValueError(msg) from exc
+
+
+def _build_storage_uri(artifact_path: Path, storage_uri_prefix: str) -> str:
+    """Build a valid storage URI for an artifact."""
+    if not storage_uri_prefix:
+        return artifact_path.resolve().as_uri()
+
+    normalized_prefix = storage_uri_prefix.strip()
+    if not normalized_prefix.endswith("/"):
+        normalized_prefix = f"{normalized_prefix}/"
+
+    return f"{normalized_prefix}{quote(artifact_path.name)}"
 
 
 def push_command(
@@ -194,6 +218,18 @@ def push_command(
         print_error(str(exc))
         raise typer.Exit(code=2) from exc
 
+    invalid_artifacts = [art_path for art_path in artifact_paths if not adapter_instance.validate_artifact(art_path)]
+    if invalid_artifacts:
+        for invalid_artifact in invalid_artifacts:
+            print_error(f"Artifact failed {adapter} adapter validation: {invalid_artifact}")
+        raise typer.Exit(code=2)
+
+    try:
+        artifact_type = _resolve_artifact_type(adapter_instance.adapter_type)
+    except ValueError as exc:
+        print_error(str(exc))
+        raise typer.Exit(code=2) from exc
+
     print_success(f"Parameters valid ({len(artifact_paths)} artifact(s), {len(commit_repo)} commit(s))")
 
     # -- Step 2: Extract metadata + compute checksums -------------------
@@ -201,12 +237,6 @@ def push_command(
 
     artifact_payloads: list[ArtifactPayload] = []
     for art_path in artifact_paths:
-        # Determine artifact type from adapter
-        try:
-            art_type = ArtifactTypeEnum(adapter_instance.adapter_type)
-        except ValueError:
-            art_type = ArtifactTypeEnum.GENERIC
-
         # Extract adapter metadata
         adapter_result = adapter_instance.extract_metadata(art_path)
         print_adapter_result(adapter, adapter_result)
@@ -231,12 +261,12 @@ def push_command(
             sha256 = compute_sha256(art_path)
 
         # Build storage URI
-        storage_uri = f"{storage_uri_prefix}{art_path.name}" if storage_uri_prefix else f"file://{art_path.resolve()}"
+        storage_uri = _build_storage_uri(art_path, storage_uri_prefix)
 
         # Construct artifact payload
         artifact_payload = ArtifactPayload(
             name=art_path.name,
-            type=art_type,
+            type=artifact_type,
             storage_uri=storage_uri,
             sha256=sha256,
             size_bytes=art_path.stat().st_size,

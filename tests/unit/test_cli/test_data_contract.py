@@ -117,6 +117,16 @@ class TestArtifactPayload:
         )
         assert art.metadata == {"key": "value"}
 
+    def test_invalid_storage_uri_rejected(self) -> None:
+        """storage_uri must be an absolute URI."""
+        with pytest.raises(ValidationError, match="storage_uri"):
+            ArtifactPayload(
+                name="file.zip",
+                type=ArtifactTypeEnum.GENERIC,
+                storage_uri="not-a-uri",
+                sha256="a" * 64,
+            )
+
 
 class TestBuildEventPayload:
     """Test BuildEventPayload model validation."""
@@ -195,6 +205,16 @@ class TestBuildEventPayload:
         payload = BuildEventPayload(**valid_payload_data)  # type: ignore[arg-type]
         assert payload.ci_metadata is not None
         assert payload.ci_metadata.ci_system == "Jenkins"
+
+    def test_invalid_pipeline_url_rejected(self, valid_payload_data: dict[str, object]) -> None:
+        """pipeline_url must be an absolute URI when provided."""
+        valid_payload_data["ci_metadata"] = {
+            "ci_system": "Jenkins",
+            "pipeline_url": "jenkins/build/1",
+        }
+
+        with pytest.raises(ValidationError, match="pipeline_url"):
+            BuildEventPayload(**valid_payload_data)  # type: ignore[arg-type]
 
     def test_to_json_dict(self, valid_payload_data: dict[str, object]) -> None:
         """to_json_dict() produces a JSON-serializable dictionary."""

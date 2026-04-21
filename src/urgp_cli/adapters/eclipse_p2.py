@@ -189,7 +189,16 @@ class EclipseP2Adapter(BaseAdapter):
                         if "content.xml" in jar_zf.namelist():
                             return jar_zf.read("content.xml")
 
-            # Strategy 3: compositeContent.xml (composite repositories)
+            # Strategy 3: compositeContent.jar containing content.xml
+            for name in names:
+                basename = name.rsplit("/", 1)[-1] if "/" in name else name
+                if basename == "compositeContent.jar":
+                    jar_bytes = zf.read(name)
+                    with zipfile.ZipFile(io.BytesIO(jar_bytes), "r") as jar_zf:
+                        if "content.xml" in jar_zf.namelist():
+                            return jar_zf.read("content.xml")
+
+            # Strategy 4: compositeContent.xml (composite repositories)
             for name in names:
                 basename = name.rsplit("/", 1)[-1] if "/" in name else name
                 if basename == "compositeContent.xml":

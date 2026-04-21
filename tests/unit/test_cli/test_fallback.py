@@ -158,6 +158,27 @@ class TestFallbackFileCreation:
         filename = os.path.basename(result.fallback_path)
         assert filename == "urgp-fallback-my-custom-build-42.json"
 
+    def test_fallback_filename_collision_adds_numeric_suffix(self, tmp_path: Path) -> None:
+        """Existing fallback files must not be overwritten."""
+        existing_file = tmp_path / "urgp-fallback-my-custom-build-42.json"
+        existing_file.write_text("{}", encoding="utf-8")
+
+        client = URGPClient("http://localhost:8000", max_retries=1)
+        payload = _make_test_payload(build_id="my-custom-build-42")
+
+        mock_post = MagicMock(return_value=httpx.Response(503, text="Unavailable"))
+
+        with (
+            patch("urgp_cli.transport.client.httpx.post", mock_post),
+            patch("urgp_cli.transport.client.time.sleep"),
+            patch("urgp_cli.transport.client.Path.cwd", return_value=tmp_path),
+        ):
+            result = client.push(payload, "test-api-key")
+
+        assert result.fallback_path is not None
+        filename = os.path.basename(result.fallback_path)
+        assert filename == "urgp-fallback-my-custom-build-42-1.json"
+
     def test_no_fallback_on_client_errors(self) -> None:
         """Client errors (4xx) do NOT create fallback files."""
         client = URGPClient("http://localhost:8000", max_retries=3)

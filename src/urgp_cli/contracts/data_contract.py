@@ -15,6 +15,7 @@ from __future__ import annotations
 import datetime
 import re
 from enum import Enum
+from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -42,6 +43,32 @@ class ArtifactTypeEnum(str, Enum):
 
 _SHA256_PATTERN = re.compile(r"^[a-f0-9]{64}$")
 _COMMIT_HASH_PATTERN = re.compile(r"^[a-f0-9]{40}$")
+
+
+def _validate_absolute_uri(value: str, *, field_name: str) -> str:
+    """Validate that a field contains an absolute URI."""
+    normalized = value.strip()
+    parsed = urlsplit(normalized)
+
+    if not normalized:
+        msg = f"{field_name} must not be empty"
+        raise ValueError(msg)
+
+    if not parsed.scheme:
+        msg = f"{field_name} must be an absolute URI with a scheme"
+        raise ValueError(msg)
+
+    if parsed.scheme == "file":
+        if not parsed.path:
+            msg = f"{field_name} must include an absolute file path"
+            raise ValueError(msg)
+        return normalized
+
+    if not parsed.netloc and not parsed.path:
+        msg = f"{field_name} must include a network location or path"
+        raise ValueError(msg)
+
+    return normalized
 
 
 class CommitHash(BaseModel):
@@ -120,6 +147,12 @@ class ArtifactPayload(BaseModel):
             raise ValueError(msg)
         return normalized
 
+    @field_validator("storage_uri")
+    @classmethod
+    def validate_storage_uri(cls, v: str) -> str:
+        """Validate that storage_uri is a well-formed absolute URI."""
+        return _validate_absolute_uri(v, field_name="storage_uri")
+
 
 class CIMetadata(BaseModel):
     """Optional CI/CD pipeline metadata attached to the build event."""
@@ -129,6 +162,14 @@ class CIMetadata(BaseModel):
     ci_system: str | None = Field(default=None, description="CI system name (e.g., 'Jenkins', 'GitHub Actions')")
     pipeline_url: str | None = Field(default=None, description="URL to the CI/CD pipeline run")
     triggered_by: str | None = Field(default=None, description="User or trigger that initiated the build")
+
+    @field_validator("pipeline_url")
+    @classmethod
+    def validate_pipeline_url(cls, v: str | None) -> str | None:
+        """Validate pipeline_url when provided."""
+        if v is None:
+            return None
+        return _validate_absolute_uri(v, field_name="pipeline_url")
 
 
 class BuildEventPayload(BaseModel):
