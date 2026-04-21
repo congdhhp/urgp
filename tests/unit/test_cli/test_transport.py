@@ -12,6 +12,7 @@ Reference:
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import httpx
@@ -122,7 +123,7 @@ class TestRetryLogic:
         assert result.status_code == 200
         assert mock_post.call_count == 3
 
-    def test_all_retries_fail_creates_fallback(self) -> None:
+    def test_all_retries_fail_creates_fallback(self, tmp_path: Path) -> None:
         """All 3 attempts return 500: falls back to local file."""
         client = URGPClient("http://localhost:8000", max_retries=3)
         payload = _make_test_payload()
@@ -138,6 +139,7 @@ class TestRetryLogic:
         with (
             patch("urgp_cli.transport.client.httpx.post", mock_post),
             patch("urgp_cli.transport.client.time.sleep"),
+            patch("urgp_cli.transport.client.Path.cwd", return_value=tmp_path),
         ):
             result = client.push(payload, "test-api-key")
 
