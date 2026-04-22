@@ -85,6 +85,16 @@ class URGPSettings(BaseSettings):
         default=[],
         description="Valid API keys for P1 authentication (Phase 2: database-backed with bcrypt)",
     )
+    idempotency_ttl_seconds: int = Field(
+        default=86400,
+        ge=60,
+        description="TTL for completed idempotency records in seconds (default: 24h)",
+    )
+    idempotency_pending_ttl_seconds: int = Field(
+        default=120,
+        ge=5,
+        description="TTL for in-progress idempotency reservations in seconds",
+    )
 
     # ─────────────────────────────────────────────
     # Notifications
@@ -100,6 +110,11 @@ class URGPSettings(BaseSettings):
     # ─────────────────────────────────────────────
     rate_limit_read: int = Field(default=100, ge=1, description="Read requests per minute per API key")
     rate_limit_write: int = Field(default=20, ge=1, description="Write requests per minute per API key")
+    validation_dlq_max_body_bytes: int = Field(
+        default=65536,
+        ge=1024,
+        description="Maximum request body bytes captured when publishing validation failures to the DLQ",
+    )
 
     # ─────────────────────────────────────────────
     # Operational

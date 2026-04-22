@@ -1,64 +1,83 @@
-"""Rate limiting middleware — Redis sliding window counter.
+"""Rate limiting middleware support — Redis-backed sliding window counter.
 
-Implements per-API-key rate limiting using Redis sorted sets.
-Configurable limits for read (100/min) and write (20/min) operations.
+Implements per-API-key rate limiting using a Redis Lua script so each
+check-and-record operation is atomic under concurrency.
 
 Reference: docs/07-implementation-plan.md § P1-3.6
 """
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import time
+import uuid
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
 import redis.asyncio as aioredis
 
 logger = logging.getLogger(__name__)
 
-# Key prefix for rate limit entries
-_KEY_PREFIX = "ratelimit"
+if TYPE_CHECKING:
+    RedisType = aioredis.Redis[Any]
+else:
+    RedisType = aioredis.Redis
 
-# Sliding window duration in seconds
+_KEY_PREFIX = "ratelimit"
 _WINDOW_SECONDS = 60
+
+_SLIDING_WINDOW_SCRIPT = """
+local key = KEYS[1]
+local now = tonumber(ARGV[1])
+local window_start = tonumber(ARGV[2])
+local limit = tonumber(ARGV[3])
+local ttl = tonumber(ARGV[4])
+local member = ARGV[5]
+
+redis.call("ZREMRANGEBYSCORE", key, "-inf", window_start)
+
+local current = redis.call("ZCARD", key)
+if current >= limit then
+  redis.call("EXPIRE", key, ttl)
+  return {0, limit, 0}
+end
+
+redis.call("ZADD", key, now, member)
+redis.call("EXPIRE", key, ttl)
+
+local remaining = limit - current - 1
+return {1, limit, remaining}
+"""
+
+
+def _fingerprint_api_key(api_key: str) -> str:
+    """Return a non-reversible fingerprint for logging."""
+    return hashlib.sha256(api_key.encode("utf-8")).hexdigest()[:12]
 
 
 @dataclass(frozen=True)
 class RateLimitResult:
-    """Result of a rate limit check.
-
-    Attributes:
-        allowed: Whether the request is within the rate limit.
-        limit: Maximum requests allowed in the window.
-        remaining: Requests remaining in the current window.
-        reset: Unix timestamp when the window resets.
-    """
+    """Result of a rate limit check."""
 
     allowed: bool
     limit: int
     remaining: int
     reset: int
 
+    def as_headers(self) -> dict[str, str]:
+        """Render the result as HTTP response headers."""
+        return {
+            "X-RateLimit-Limit": str(self.limit),
+            "X-RateLimit-Remaining": str(self.remaining),
+            "X-RateLimit-Reset": str(self.reset),
+        }
+
 
 class RateLimiter:
-    """Redis-backed sliding window rate limiter.
+    """Redis-backed sliding window rate limiter."""
 
-    Uses Redis sorted sets with timestamp-based scores to implement
-    an accurate sliding window counter per API key.
-
-    Algorithm:
-        1. Remove expired entries (older than window)
-        2. Count remaining entries in the window
-        3. If under limit, add current timestamp
-        4. Return result with remaining capacity
-    """
-
-    def __init__(self, redis_client: aioredis.Redis[bytes]) -> None:
-        """Initialize with a Redis client.
-
-        Args:
-            redis_client: Async Redis client instance.
-        """
+    def __init__(self, redis_client: RedisType) -> None:
         self._redis = redis_client
 
     async def check_rate_limit(
@@ -69,23 +88,7 @@ class RateLimiter:
         read_limit: int = 100,
         write_limit: int = 20,
     ) -> RateLimitResult:
-        """Check and update the rate limit for an API key.
-
-        Uses a Redis sorted set pipeline:
-        1. ZREMRANGEBYSCORE — remove entries outside the window
-        2. ZCARD — count current entries
-        3. ZADD — add current request (if allowed)
-        4. EXPIRE — set TTL on the key
-
-        Args:
-            api_key: The API key to rate-limit.
-            is_write: True for write operations (lower limit).
-            read_limit: Max read requests per minute.
-            write_limit: Max write requests per minute.
-
-        Returns:
-            RateLimitResult with allowed flag and header values.
-        """
+        """Check and update the rate limit for an API key atomically."""
         limit = write_limit if is_write else read_limit
         operation = "write" if is_write else "read"
         key = f"{_KEY_PREFIX}:{api_key}:{operation}"
@@ -93,43 +96,35 @@ class RateLimiter:
         now = time.time()
         window_start = now - _WINDOW_SECONDS
         reset_at = int(now) + _WINDOW_SECONDS
+        member = f"{now}:{uuid.uuid4().hex}"
 
-        # Execute atomically via pipeline
-        pipe = self._redis.pipeline()
-        pipe.zremrangebyscore(key, "-inf", window_start)
-        pipe.zcard(key)
-        results = await pipe.execute()
+        raw_result = await self._redis.eval(  # type: ignore[no-untyped-call]
+            _SLIDING_WINDOW_SCRIPT,
+            1,
+            key,
+            now,
+            window_start,
+            limit,
+            _WINDOW_SECONDS + 1,
+            member,
+        )
 
-        current_count: int = results[1]
+        result = list(raw_result)
+        allowed = bool(int(result[0]))
+        resolved_limit = int(result[1])
+        remaining = int(result[2])
 
-        if current_count >= limit:
-            # Rate limit exceeded
-            remaining = 0
+        if not allowed:
             logger.warning(
-                "Rate limit exceeded [key=%s, operation=%s, count=%d, limit=%d]",
-                api_key[:8] + "...",
+                "Rate limit exceeded [api_key=%s, operation=%s, limit=%d]",
+                _fingerprint_api_key(api_key),
                 operation,
-                current_count,
-                limit,
+                resolved_limit,
             )
-            return RateLimitResult(
-                allowed=False,
-                limit=limit,
-                remaining=remaining,
-                reset=reset_at,
-            )
-
-        # Under limit — record this request
-        pipe2 = self._redis.pipeline()
-        pipe2.zadd(key, {f"{now}": now})
-        pipe2.expire(key, _WINDOW_SECONDS + 1)
-        await pipe2.execute()
-
-        remaining = max(0, limit - current_count - 1)
 
         return RateLimitResult(
-            allowed=True,
-            limit=limit,
+            allowed=allowed,
+            limit=resolved_limit,
             remaining=remaining,
             reset=reset_at,
         )

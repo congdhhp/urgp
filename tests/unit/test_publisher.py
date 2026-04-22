@@ -1,30 +1,20 @@
-"""Unit tests for the EventPublisher (P1-3.T5).
-
-Tests cover:
-- P1-3.T5: Message published to both build.process and build.notify routing keys
-- Payload enrichment with gateway metadata
-- Connection state management
-"""
+"""Unit tests for the EventPublisher (P1-3.T5)."""
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from urgp.messaging.topology import ROUTING_KEY_NOTIFY, ROUTING_KEY_PROCESS
+from urgp.messaging.topology import EXCHANGE_DLX, ROUTING_KEY_NOTIFY, ROUTING_KEY_PROCESS
 from urgp.models.enums import ArtifactType, BuildType
 from urgp.schemas.ingest import IngestPayload
 from urgp.services.publisher import EventPublisher
 
-# ─────────────────────────────────────────────
-# Fixtures
-# ─────────────────────────────────────────────
-
 
 def _valid_payload() -> IngestPayload:
-    """Create a valid IngestPayload for testing."""
     return IngestPayload(
         product_id="S32_IDE",
         release="3.6.8-RFP",
@@ -49,90 +39,94 @@ def _valid_payload() -> IngestPayload:
     )
 
 
-# ─────────────────────────────────────────────
-# P1-3.T5: Publisher Tests
-# ─────────────────────────────────────────────
+def _build_mock_connection(mock_channel: AsyncMock) -> AsyncMock:
+    @asynccontextmanager
+    async def _mock_channel_ctx(*_args, **_kwargs):
+        yield mock_channel
+
+    connection = AsyncMock()
+    connection.is_closed = False
+    connection.channel = _mock_channel_ctx
+    return connection
+
+
+def _attach_transaction(mock_channel: AsyncMock) -> MagicMock:
+    transaction = MagicMock()
+
+    @asynccontextmanager
+    async def _transaction_ctx():
+        yield transaction
+
+    mock_channel.transaction = _transaction_ctx
+    return transaction
 
 
 class TestEventPublisher:
     """P1-3.T5: RabbitMQ message publishing tests."""
 
     async def test_publish_sends_to_both_queues(self) -> None:
-        """Published message is sent to both process and notify routing keys."""
-        from contextlib import asynccontextmanager
-
         publisher = EventPublisher("amqp://test:test@localhost:5672/")
 
         mock_exchange = AsyncMock()
         mock_channel = AsyncMock()
         mock_channel.get_exchange = AsyncMock(return_value=mock_exchange)
-
-        @asynccontextmanager
-        async def _mock_channel_ctx():
-            yield mock_channel
-
-        mock_connection = AsyncMock()
-        mock_connection.is_closed = False
-        mock_connection.channel = _mock_channel_ctx
-
-        publisher._connection = mock_connection
+        _attach_transaction(mock_channel)
+        publisher._connection = _build_mock_connection(mock_channel)
 
         await publisher.publish(_valid_payload())
 
-        # Verify get_exchange was called once
         mock_channel.get_exchange.assert_awaited_once()
-
-        # Verify publish was called twice on the exchange (process + notify)
         assert mock_exchange.publish.await_count == 2
-        calls = mock_exchange.publish.await_args_list
-        routing_keys = [c.kwargs.get("routing_key") for c in calls]
-        assert ROUTING_KEY_PROCESS in routing_keys
-        assert ROUTING_KEY_NOTIFY in routing_keys
+        routing_keys = [call.kwargs["routing_key"] for call in mock_exchange.publish.await_args_list]
+        assert routing_keys == [ROUTING_KEY_PROCESS, ROUTING_KEY_NOTIFY]
 
     async def test_publish_returns_timestamp(self) -> None:
-        """Publish returns the ingestion timestamp."""
-        from contextlib import asynccontextmanager
-
         publisher = EventPublisher("amqp://test:test@localhost:5672/")
 
         mock_exchange = AsyncMock()
         mock_channel = AsyncMock()
         mock_channel.get_exchange = AsyncMock(return_value=mock_exchange)
-
-        @asynccontextmanager
-        async def _mock_channel_ctx():
-            yield mock_channel
-
-        mock_connection = AsyncMock()
-        mock_connection.is_closed = False
-        mock_connection.channel = _mock_channel_ctx
-
-        publisher._connection = mock_connection
+        _attach_transaction(mock_channel)
+        publisher._connection = _build_mock_connection(mock_channel)
 
         result = await publisher.publish(_valid_payload())
 
         assert isinstance(result, datetime)
 
     async def test_publish_fails_when_not_connected(self) -> None:
-        """Publish raises RuntimeError when not connected."""
         publisher = EventPublisher("amqp://test:test@localhost:5672/")
 
         with pytest.raises(RuntimeError, match="not connected"):
             await publisher.publish(_valid_payload())
 
+    async def test_publish_validation_failure_uses_dlx_exchange(self) -> None:
+        publisher = EventPublisher("amqp://test:test@localhost:5672/")
+
+        mock_exchange = AsyncMock()
+        mock_channel = AsyncMock()
+        mock_channel.get_exchange = AsyncMock(return_value=mock_exchange)
+        publisher._connection = _build_mock_connection(mock_channel)
+
+        await publisher.publish_validation_failure(
+            raw_body='{"build_id":"broken"}',
+            validation_errors=[{"field": "build_id", "message": "Field required"}],
+            request_context={"path": "/api/v1/ingest", "request_id": "req-123"},
+        )
+
+        mock_channel.get_exchange.assert_awaited_once_with(EXCHANGE_DLX)
+        mock_exchange.publish.assert_awaited_once()
+        assert mock_exchange.publish.await_args.kwargs["routing_key"] == ""
+
     def test_gateway_instance_id_is_unique(self) -> None:
-        """Each publisher instance gets a unique gateway ID."""
         p1 = EventPublisher("amqp://test@localhost/")
         p2 = EventPublisher("amqp://test@localhost/")
         assert p1.gateway_instance_id != p2.gateway_instance_id
 
     def test_is_connected_false_initially(self) -> None:
-        """Publisher starts disconnected."""
         publisher = EventPublisher("amqp://test@localhost/")
         assert publisher.is_connected is False
 
     async def test_payload_enrichment(self) -> None:
-        """Published payload includes gateway metadata."""
         publisher = EventPublisher("amqp://test:test@localhost:5672/")
 
         payload = _valid_payload()
@@ -144,7 +138,6 @@ class TestEventPublisher:
         assert enriched["build_id"] == "260330"
 
     async def test_close_when_connected(self) -> None:
-        """Close gracefully closes the connection."""
         publisher = EventPublisher("amqp://test:test@localhost:5672/")
         mock_connection = AsyncMock()
         mock_connection.is_closed = False
@@ -152,10 +145,9 @@ class TestEventPublisher:
 
         await publisher.close()
 
-        mock_connection.close.assert_called_once()
+        mock_connection.close.assert_awaited_once()
         assert publisher._connection is None
 
     async def test_close_when_not_connected(self) -> None:
-        """Close is safe to call when not connected."""
         publisher = EventPublisher("amqp://test@localhost/")
-        await publisher.close()  # Should not raise
+        await publisher.close()

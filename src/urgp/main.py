@@ -15,6 +15,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
 from urgp import __version__
@@ -37,6 +38,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         settings.app_version,
         settings.environment,
     )
+
+    app.state.redis = None
+    app.state.publisher = None
 
     # Set up RabbitMQ topology (idempotent)
     try:
@@ -120,8 +124,10 @@ def create_app() -> FastAPI:
     # ── Middleware ─────────────────────────────────────────
     # Request ID middleware (must be added before CORS)
     from urgp.middleware.request_id import RequestIDMiddleware
+    from urgp.middleware.response_headers import ResponseHeadersMiddleware
 
     app.add_middleware(RequestIDMiddleware)
+    app.add_middleware(ResponseHeadersMiddleware)
 
     # CORS middleware
     try:
@@ -142,8 +148,14 @@ def create_app() -> FastAPI:
 
     # ── Routers ───────────────────────────────────────────
     from urgp.api.admin import router as admin_router
+    from urgp.api.error_handlers import request_validation_exception_handler
     from urgp.api.health import router as health_router
     from urgp.api.ingest import router as ingest_router
+
+    app.add_exception_handler(
+        RequestValidationError,
+        request_validation_exception_handler,
+    )
 
     app.include_router(health_router)
     app.include_router(ingest_router)

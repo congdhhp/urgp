@@ -53,6 +53,23 @@ class IngestDuplicateResponse(BaseModel):
     )
 
 
+class IngestInProgressResponse(BaseModel):
+    """HTTP 202 response for an event already reserved by another in-flight request."""
+
+    message: str = Field(
+        default="Build event is already being processed",
+        description="Human-readable status message indicating the event is still in progress",
+    )
+    build_id: str = Field(
+        ...,
+        description="The build identifier from the submitted payload",
+    )
+    reservation_timestamp: datetime = Field(
+        ...,
+        description="Timestamp when the in-flight reservation started",
+    )
+
+
 class ValidationErrorDetail(BaseModel):
     """Structured validation error detail for HTTP 422 responses.
 
@@ -70,6 +87,23 @@ class ValidationErrorDetail(BaseModel):
     input_value: object | None = Field(
         default=None,
         description="The invalid value that was provided",
+    )
+
+
+class ValidationErrorResponse(BaseModel):
+    """Structured HTTP 422 response for payload validation failures."""
+
+    error: str = Field(
+        default="validation_failed",
+        description="Error type identifier",
+    )
+    message: str = Field(
+        default="Payload validation failed.",
+        description="Human-readable error message",
+    )
+    details: list[ValidationErrorDetail] = Field(
+        ...,
+        description="Field-level validation details",
     )
 
 
@@ -120,4 +154,17 @@ class DLQCountResponse(BaseModel):
         default=0,
         ge=0,
         description="Number of active consumers on the DLQ",
+    )
+
+
+class ServiceUnavailableResponse(BaseModel):
+    """Structured HTTP 503 response for transient dependency failures."""
+
+    error: str = Field(
+        default="service_unavailable",
+        description="Error type identifier",
+    )
+    message: str = Field(
+        ...,
+        description="Human-readable error message",
     )

@@ -10,6 +10,7 @@ Reference: docs/07-implementation-plan.md § P1-3.1
 from __future__ import annotations
 
 import logging
+import secrets
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, Security, status
@@ -55,7 +56,7 @@ async def verify_api_key(
             detail="API key authentication is not configured. Contact an administrator.",
         )
 
-    if api_key not in settings.api_keys:
+    if not any(secrets.compare_digest(api_key, configured_key) for configured_key in settings.api_keys):
         logger.warning("API request rejected: invalid API key")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

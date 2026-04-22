@@ -206,8 +206,15 @@ class IngestPayload(BaseModel):
     @model_validator(mode="after")
     def validate_unique_artifact_checksums(self) -> IngestPayload:
         """Ensure all artifact SHA-256 checksums are unique within the payload."""
-        checksums = [a.sha256 for a in self.artifacts]
-        duplicates = {c for c in checksums if checksums.count(c) > 1}
+        seen: set[str] = set()
+        duplicates: set[str] = set()
+
+        for artifact in self.artifacts:
+            if artifact.sha256 in seen:
+                duplicates.add(artifact.sha256)
+            else:
+                seen.add(artifact.sha256)
+
         if duplicates:
             msg = f"Duplicate artifact SHA-256 checksums found: {', '.join(sorted(duplicates))}"
             raise ValueError(msg)
