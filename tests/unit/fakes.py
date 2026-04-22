@@ -73,11 +73,7 @@ class FakeRedis:
         member = str(argv[4])
 
         bucket = self._sorted_sets.setdefault(key, {})
-        bucket = {
-            existing_member: score
-            for existing_member, score in bucket.items()
-            if score > window_start
-        }
+        bucket = {existing_member: score for existing_member, score in bucket.items() if score > window_start}
         self._sorted_sets[key] = bucket
 
         current = len(bucket)
