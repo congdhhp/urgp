@@ -167,6 +167,23 @@ def sample_p2_repo_with_content_jar(tmp_path: Path, sample_content_xml: bytes) -
 
 
 @pytest.fixture
+def sample_composite_p2_repo_with_content_jar(tmp_path: Path, sample_content_xml: bytes) -> Path:
+    """Create a composite P2 repo ZIP where content.xml is inside compositeContent.jar."""
+    zip_path = tmp_path / "composite_p2_repo_with_content_jar.zip"
+
+    composite_content_jar_buf = io.BytesIO()
+    with zipfile.ZipFile(composite_content_jar_buf, "w") as jar:
+        jar.writestr("content.xml", sample_content_xml)
+    composite_content_jar_bytes = composite_content_jar_buf.getvalue()
+
+    with zipfile.ZipFile(zip_path, "w") as zf:
+        zf.writestr("compositeContent.jar", composite_content_jar_bytes)
+        zf.writestr("compositeArtifacts.jar", b"fake-composite-artifacts-jar")
+
+    return zip_path
+
+
+@pytest.fixture
 def invalid_zip_file(tmp_path: Path) -> Path:
     """Create a file that is not a valid ZIP."""
     path = tmp_path / "invalid.zip"

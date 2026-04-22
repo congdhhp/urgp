@@ -54,6 +54,13 @@ class TestEclipseP2AdapterMetadata:
         assert result.errors == []
         assert result.metadata["iu_count"] == 4
 
+    def test_extract_from_composite_content_jar(self, sample_composite_p2_repo_with_content_jar: Path) -> None:
+        """Composite P2 ZIP with compositeContent.jar: correctly unwraps and parses content.xml."""
+        result = self.adapter.extract_metadata(sample_composite_p2_repo_with_content_jar)
+
+        assert result.errors == []
+        assert result.metadata["iu_count"] == 4
+
     def test_dependencies_extracted(self, sample_p2_repo_zip: Path) -> None:
         """Dependencies (required elements) are extracted from content.xml."""
         result = self.adapter.extract_metadata(sample_p2_repo_zip)
@@ -89,6 +96,10 @@ class TestEclipseP2AdapterValidation:
     def test_p2_with_content_jar(self, sample_p2_repo_with_content_jar: Path) -> None:
         """P2 repo with content.jar passes validation."""
         assert self.adapter.validate_artifact(sample_p2_repo_with_content_jar) is True
+
+    def test_composite_p2_with_content_jar(self, sample_composite_p2_repo_with_content_jar: Path) -> None:
+        """Composite P2 repo with compositeContent.jar passes validation."""
+        assert self.adapter.validate_artifact(sample_composite_p2_repo_with_content_jar) is True
 
     def test_non_p2_zip_fails(self, non_p2_zip_file: Path) -> None:
         """Non-P2 ZIP fails validation."""
