@@ -1,10 +1,11 @@
 """URGP FastAPI application entry point.
 
 Initializes the FastAPI app with middleware, routers, and lifecycle events.
+Manages shared dependencies (Redis, RabbitMQ publisher) via app.state.
 
 Reference:
     - docs/05-technical-design.md § Project Structure
-    - docs/07-implementation-plan.md § P1-1.6
+    - docs/07-implementation-plan.md § P1-1.6, P1-3
 """
 
 from __future__ import annotations
@@ -49,12 +50,56 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception:
         logger.warning("Could not initialize RabbitMQ topology — will retry on first use")
 
+    # Initialize shared Redis client
+    try:
+        import redis.asyncio as aioredis
+
+        app.state.redis = aioredis.from_url(
+            str(settings.redis_url),
+            decode_responses=False,
+            socket_timeout=5,
+        )
+        await app.state.redis.ping()
+        logger.info("Redis client initialized")
+    except Exception:
+        logger.warning("Could not connect to Redis — idempotency and rate limiting may fail")
+        app.state.redis = None
+
+    # Initialize EventPublisher (RabbitMQ)
+    try:
+        from urgp.services.publisher import EventPublisher
+
+        app.state.publisher = EventPublisher(settings.rabbitmq_url)
+        await app.state.publisher.connect()
+        logger.info("EventPublisher initialized")
+    except Exception:
+        logger.warning("Could not initialize EventPublisher — ingestion will fail")
+        app.state.publisher = None
+
     logger.info("URGP API startup complete")
 
     yield
 
     # ── Shutdown ───────────────────────────────────────────
     logger.info("URGP API shutting down")
+
+    # Close EventPublisher
+    if hasattr(app.state, "publisher") and app.state.publisher:
+        try:
+            await app.state.publisher.close()
+            logger.info("EventPublisher closed")
+        except Exception:
+            logger.warning("Error closing EventPublisher")
+
+    # Close Redis
+    if hasattr(app.state, "redis") and app.state.redis:
+        try:
+            await app.state.redis.close()
+            logger.info("Redis client closed")
+        except Exception:
+            logger.warning("Error closing Redis client")
+
+    logger.info("URGP API shutdown complete")
 
 
 def create_app() -> FastAPI:
@@ -96,9 +141,13 @@ def create_app() -> FastAPI:
     )
 
     # ── Routers ───────────────────────────────────────────
+    from urgp.api.admin import router as admin_router
     from urgp.api.health import router as health_router
+    from urgp.api.ingest import router as ingest_router
 
     app.include_router(health_router)
+    app.include_router(ingest_router)
+    app.include_router(admin_router)
 
     return app
 

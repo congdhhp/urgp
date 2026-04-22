@@ -81,6 +81,10 @@ class URGPSettings(BaseSettings):
         min_length=32,
         description="HMAC-SHA256 signing key for manifest signatures",
     )
+    api_keys: list[str] = Field(
+        default=[],
+        description="Valid API keys for P1 authentication (Phase 2: database-backed with bcrypt)",
+    )
 
     # ─────────────────────────────────────────────
     # Notifications
