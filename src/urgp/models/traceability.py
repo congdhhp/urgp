@@ -8,7 +8,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Column, DateTime, ForeignKey, Index, String, Table, Text
+from sqlalchemy import Column, DateTime, ForeignKey, Index, String, Table, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -57,9 +57,12 @@ class Commit(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """
 
     __tablename__ = "commits"
-    __table_args__ = (Index("ix_commits_hash", "hash", unique=True),)
+    __table_args__ = (
+        UniqueConstraint("repository", "hash", name="uq_commits_repository_hash"),
+        Index("ix_commits_hash", "hash"),
+    )
 
-    hash: Mapped[str] = mapped_column(String(40), nullable=False, unique=True)  # SHA-1 hex
+    hash: Mapped[str] = mapped_column(String(40), nullable=False)  # SHA-1 hex
     repository: Mapped[str] = mapped_column(String(500), nullable=False)
     branch: Mapped[str | None] = mapped_column(String(255), nullable=True)
     author: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -86,6 +89,7 @@ class PullRequest(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """
 
     __tablename__ = "pull_requests"
+    __table_args__ = (UniqueConstraint("repository", "external_id", name="uq_pull_requests_repository_external_id"),)
 
     external_id: Mapped[str] = mapped_column(String(100), nullable=False)  # e.g., "456" or "PR-456"
     repository: Mapped[str] = mapped_column(String(500), nullable=False)
@@ -110,6 +114,7 @@ class Issue(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """
 
     __tablename__ = "issues"
+    __table_args__ = (UniqueConstraint("tracker_type", "external_id", name="uq_issues_tracker_external_id"),)
 
     external_id: Mapped[str] = mapped_column(String(100), nullable=False)  # e.g., "PROJ-1234"
     tracker_type: Mapped[str] = mapped_column(String(50), nullable=False, default="jira")  # jira, github, azure

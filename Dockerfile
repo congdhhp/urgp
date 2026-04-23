@@ -16,7 +16,7 @@ RUN pip install poetry==1.8.5 && \
     poetry config virtualenvs.create false
 
 # Copy dependency files first for caching
-COPY pyproject.toml poetry.lock* ./
+COPY pyproject.toml poetry.lock* README.md ./
 
 # Install dependencies (no dev deps for production)
 RUN poetry install --no-interaction --no-ansi --no-root --only main || \
@@ -32,7 +32,8 @@ RUN poetry install --no-interaction --no-ansi --only-root
 FROM python:3.11-slim AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/src
 
 # Create non-root user
 RUN groupadd --gid 1000 urgp && \

@@ -56,9 +56,11 @@ git clone <repo-url>
 cd urgp
 cp .env.example .env
 docker compose up -d
+docker compose exec urgp-api alembic upgrade head
+docker compose exec urgp-api python -m urgp.db.seed
 ```
 
-> **Note:** Source code implementation has not started yet. See [Implementation Plan](docs/07-implementation-plan.md) for the development roadmap.
+Current backend implementation includes the Event Gateway, RabbitMQ topology/publisher, Redis-backed idempotency and rate limiting, and a worker-driven control-plane persistence pipeline for manifests, artifacts, and commit links.
 
 ## License
 

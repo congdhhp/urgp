@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, String
+from sqlalchemy import BigInteger, DateTime, Enum, ForeignKey, Index, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -22,6 +22,15 @@ if TYPE_CHECKING:
     from urgp.models.traceability import Commit
 
 
+def _enum_values(enum_type: type[ArtifactType] | type[BuildStatus] | type[BuildType]) -> list[str]:
+    return [member.value for member in enum_type]
+
+
+artifact_type_enum = Enum(ArtifactType, name="artifact_type", values_callable=_enum_values)
+build_status_enum = Enum(BuildStatus, name="build_status", values_callable=_enum_values)
+build_type_enum = Enum(BuildType, name="build_type", values_callable=_enum_values)
+
+
 class BuildManifest(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Build Manifest entity.
 
@@ -31,11 +40,13 @@ class BuildManifest(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     __tablename__ = "build_manifests"
     __table_args__ = (
+        UniqueConstraint("product_id", "build_id", name="uq_build_manifests_product_build"),
+        Index("ix_build_manifests_build_id", "build_id"),
         Index("ix_build_manifests_product_created", "product_id", "created_at"),
         Index("ix_build_manifests_status", "status"),
     )
 
-    build_id: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
+    build_id: Mapped[str] = mapped_column(String(255), nullable=False)
     product_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("products.id", ondelete="CASCADE"),
@@ -46,8 +57,8 @@ class BuildManifest(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ForeignKey("releases.id", ondelete="SET NULL"),
         nullable=True,
     )
-    build_type: Mapped[BuildType] = mapped_column(nullable=False)
-    status: Mapped[BuildStatus] = mapped_column(nullable=False, default=BuildStatus.INGESTING)
+    build_type: Mapped[BuildType] = mapped_column(build_type_enum, nullable=False)
+    status: Mapped[BuildStatus] = mapped_column(build_status_enum, nullable=False, default=BuildStatus.INGESTING)
 
     # Traceability
     traceability_incomplete: Mapped[bool] = mapped_column(default=False, nullable=False)
@@ -91,7 +102,7 @@ class Artifact(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         nullable=False,
     )
     name: Mapped[str] = mapped_column(String(500), nullable=False)
-    type: Mapped[ArtifactType] = mapped_column(nullable=False)
+    type: Mapped[ArtifactType] = mapped_column(artifact_type_enum, nullable=False)
     storage_uri: Mapped[str] = mapped_column(String(1000), nullable=False)
     sha256_checksum: Mapped[str] = mapped_column(String(64), nullable=False)  # SHA-256 hex digest
     size_bytes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)

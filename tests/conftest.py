@@ -11,6 +11,7 @@ import pytest
 def sample_product_data() -> dict[str, Any]:
     """Sample product data for testing."""
     return {
+        "external_id": "s32-design-studio",
         "name": "S32 Design Studio",
         "description": "NXP S32 Design Studio IDE",
         "git_config": {

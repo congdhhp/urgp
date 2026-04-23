@@ -11,7 +11,7 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Request, Response
 from sqlalchemy import text as sa_text
 
 router = APIRouter(tags=["Health"])
@@ -31,7 +31,7 @@ async def health_check() -> dict[str, Any]:
 
 
 @router.get("/health/ready", response_model=dict[str, Any])
-async def readiness_check(response: Response) -> dict[str, Any]:
+async def readiness_check(request: Request, response: Response) -> dict[str, Any]:
     """Readiness check — verifies critical dependencies.
 
     Checks connectivity to:
@@ -51,10 +51,12 @@ async def readiness_check(response: Response) -> dict[str, Any]:
         from urgp.db.session import create_engine
 
         settings = get_settings()
-        engine = create_engine(settings.database_url_str, pool_size=1, pool_overflow=0)
+        shared_engine = getattr(getattr(request.app.state, "resources", None), "engine", None)
+        engine = shared_engine or create_engine(settings.database_url_str, pool_size=1, pool_overflow=0)
         async with engine.connect() as conn:
             await conn.execute(sa_text("SELECT 1"))
-        await engine.dispose()
+        if shared_engine is None:
+            await engine.dispose()
         checks["database"] = {"status": "healthy", "type": "postgresql"}
     except Exception as e:
         checks["database"] = {"status": "unhealthy", "error": str(e)}
@@ -83,9 +85,17 @@ async def readiness_check(response: Response) -> dict[str, Any]:
         from urgp.config import get_settings
 
         settings = get_settings()
-        r = aioredis.from_url(str(settings.redis_url), socket_timeout=5)
-        await r.ping()
-        await r.close()
+        shared_redis = getattr(request.app.state, "redis", None)
+        if shared_redis is not None:
+            await shared_redis.ping()
+        else:
+            redis_client = aioredis.from_url(str(settings.redis_url), socket_timeout=5)
+            await redis_client.ping()
+            aclose = getattr(redis_client, "aclose", None)
+            if callable(aclose):
+                await aclose()
+            else:
+                await redis_client.close()
         checks["redis"] = {"status": "healthy"}
     except Exception as e:
         checks["redis"] = {"status": "unhealthy", "error": str(e)}

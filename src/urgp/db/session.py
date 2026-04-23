@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, AsyncIterator
+from contextlib import asynccontextmanager
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 
-def create_engine(database_url: str, pool_size: int = 10, pool_overflow: int = 20) -> AsyncEngine:  # type: ignore[name-defined]  # noqa: F821
+def create_engine(database_url: str, pool_size: int = 10, pool_overflow: int = 20) -> AsyncEngine:
     """Create an async SQLAlchemy engine.
 
     Args:
@@ -29,7 +30,7 @@ def create_engine(database_url: str, pool_size: int = 10, pool_overflow: int = 2
     )
 
 
-def create_session_factory(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:  # type: ignore[name-defined]  # noqa: F821
+def create_session_factory(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
     """Create an async session factory.
 
     Args:
@@ -54,6 +55,18 @@ async def get_session(session_factory: async_sessionmaker[AsyncSession]) -> Asyn
         async def list_items(session: AsyncSession = Depends(get_session)):
             ...
     """
+    async with session_factory() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+
+
+@asynccontextmanager
+async def session_scope(session_factory: async_sessionmaker[AsyncSession]) -> AsyncIterator[AsyncSession]:
+    """Context manager that commits or rolls back an async session."""
     async with session_factory() as session:
         try:
             yield session

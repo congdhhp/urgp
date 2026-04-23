@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import DateTime, Enum, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -19,6 +19,17 @@ from urgp.models.enums import NotificationChannel
 if TYPE_CHECKING:
     from urgp.models.manifest import BuildManifest
     from urgp.models.product import Product, Release
+
+
+def _enum_values(enum_type: type[NotificationChannel]) -> list[str]:
+    return [member.value for member in enum_type]
+
+
+notification_channel_enum = Enum(
+    NotificationChannel,
+    name="notification_channel",
+    values_callable=_enum_values,
+)
 
 
 class NotificationSubscription(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -40,7 +51,7 @@ class NotificationSubscription(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ForeignKey("releases.id", ondelete="SET NULL"),
         nullable=True,
     )
-    channel: Mapped[NotificationChannel] = mapped_column(nullable=False)
+    channel: Mapped[NotificationChannel] = mapped_column(notification_channel_enum, nullable=False)
     webhook_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)  # Required when channel=webhook
     active: Mapped[bool] = mapped_column(default=True, nullable=False)
 
@@ -65,7 +76,7 @@ class Notification(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ForeignKey("build_manifests.id", ondelete="CASCADE"),
         nullable=False,
     )
-    channel: Mapped[NotificationChannel] = mapped_column(nullable=False)
+    channel: Mapped[NotificationChannel] = mapped_column(notification_channel_enum, nullable=False)
     recipient: Mapped[str] = mapped_column(String(500), nullable=False)  # Email address or webhook URL
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="pending")  # pending, sent, failed
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

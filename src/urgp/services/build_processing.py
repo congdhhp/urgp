@@ -1,0 +1,266 @@
+"""Build event processing and persistence for the control plane."""
+
+from __future__ import annotations
+
+import re
+import uuid
+from collections.abc import Callable
+from dataclasses import dataclass
+
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+from urgp.models.enums import BuildStatus
+from urgp.models.manifest import Artifact, BuildManifest
+from urgp.models.product import Product, Release
+from urgp.models.traceability import Commit, build_commits
+from urgp.schemas.ingest import IngestPayload
+from urgp.services.signature import ManifestSignatureService
+
+
+@dataclass(frozen=True)
+class PersistedBuildResult:
+    """Outcome of persisting a build event into the control plane."""
+
+    manifest_id: uuid.UUID
+    product_id: uuid.UUID
+    release_id: uuid.UUID
+    signature: str
+    created: bool
+    traceability_incomplete: bool
+
+
+class BuildPersistenceService:
+    """Persist validated build payloads into the relational control plane."""
+
+    def __init__(self, session: AsyncSession, signer: ManifestSignatureService) -> None:
+        self._session = session
+        self._signer = signer
+
+    async def persist_payload(self, payload: IngestPayload) -> PersistedBuildResult:
+        """Persist the build payload idempotently using database constraints."""
+        product_id = await self._ensure_product(payload.product_id)
+        release_id = await self._ensure_release(product_id, payload.release)
+
+        manifest_insert = (
+            insert(BuildManifest)
+            .values(
+                build_id=payload.build_id,
+                product_id=product_id,
+                release_id=release_id,
+                build_type=payload.build_type,
+                status=BuildStatus.COMPLETED,
+                traceability_incomplete=True,
+                cli_version=payload.cli_version,
+                ci_metadata=payload.ci_metadata.model_dump(mode="json") if payload.ci_metadata else None,
+                signature=self._signer.sign_payload(payload),
+            )
+            .on_conflict_do_nothing(
+                index_elements=["product_id", "build_id"],
+            )
+            .returning(
+                BuildManifest.id,
+                BuildManifest.signature,
+                BuildManifest.traceability_incomplete,
+            )
+        )
+
+        created_manifest = (await self._session.execute(manifest_insert)).one_or_none()
+        if created_manifest is None:
+            existing_manifest = (
+                await self._session.execute(
+                    select(
+                        BuildManifest.id,
+                        BuildManifest.release_id,
+                        BuildManifest.signature,
+                        BuildManifest.traceability_incomplete,
+                    ).where(
+                        BuildManifest.product_id == product_id,
+                        BuildManifest.build_id == payload.build_id,
+                    )
+                )
+            ).one()
+
+            return PersistedBuildResult(
+                manifest_id=existing_manifest.id,
+                product_id=product_id,
+                release_id=existing_manifest.release_id,
+                signature=existing_manifest.signature or self._signer.sign_payload(payload),
+                created=False,
+                traceability_incomplete=existing_manifest.traceability_incomplete,
+            )
+
+        manifest_id = created_manifest.id
+        await self._persist_commits(manifest_id, payload)
+        await self._persist_artifacts(manifest_id, payload)
+
+        return PersistedBuildResult(
+            manifest_id=manifest_id,
+            product_id=product_id,
+            release_id=release_id,
+            signature=created_manifest.signature,
+            created=True,
+            traceability_incomplete=created_manifest.traceability_incomplete,
+        )
+
+    async def _ensure_product(self, product_external_id: str) -> uuid.UUID:
+        statement = (
+            insert(Product)
+            .values(
+                external_id=product_external_id,
+                name=_build_default_product_name(product_external_id),
+            )
+            .on_conflict_do_nothing(index_elements=["external_id"])
+            .returning(Product.id)
+        )
+        created_id = (await self._session.execute(statement)).scalar_one_or_none()
+        if created_id is not None:
+            return created_id
+
+        existing_id = await self._session.scalar(
+            select(Product.id).where(Product.external_id == product_external_id)
+        )
+        if existing_id is None:
+            msg = f"Product '{product_external_id}' could not be resolved."
+            raise RuntimeError(msg)
+        return existing_id
+
+    async def _ensure_release(self, product_id: uuid.UUID, version: str) -> uuid.UUID:
+        statement = (
+            insert(Release)
+            .values(
+                product_id=product_id,
+                version=version,
+                release_type=_infer_release_type(version),
+                status="active",
+            )
+            .on_conflict_do_nothing(index_elements=["product_id", "version"])
+            .returning(Release.id)
+        )
+        created_id = (await self._session.execute(statement)).scalar_one_or_none()
+        if created_id is not None:
+            return created_id
+
+        existing_id = await self._session.scalar(
+            select(Release.id).where(
+                Release.product_id == product_id,
+                Release.version == version,
+            )
+        )
+        if existing_id is None:
+            msg = f"Release '{version}' for product '{product_id}' could not be resolved."
+            raise RuntimeError(msg)
+        return existing_id
+
+    async def _persist_commits(self, manifest_id: uuid.UUID, payload: IngestPayload) -> None:
+        seen: set[tuple[str, str]] = set()
+        for commit in payload.commit_hashes:
+            identity = (commit.repository, commit.hash)
+            if identity in seen:
+                continue
+            seen.add(identity)
+
+            commit_id = await self._ensure_commit(
+                repository=commit.repository,
+                commit_hash=commit.hash,
+                branch=commit.branch,
+            )
+            await self._session.execute(
+                insert(build_commits)
+                .values(
+                    build_id=manifest_id,
+                    commit_id=commit_id,
+                )
+                .on_conflict_do_nothing()
+            )
+
+    async def _ensure_commit(
+        self,
+        *,
+        repository: str,
+        commit_hash: str,
+        branch: str | None,
+    ) -> uuid.UUID:
+        statement = (
+            insert(Commit)
+            .values(
+                repository=repository,
+                hash=commit_hash,
+                branch=branch,
+            )
+            .on_conflict_do_nothing(index_elements=["repository", "hash"])
+            .returning(Commit.id)
+        )
+        commit_id = (await self._session.execute(statement)).scalar_one_or_none()
+        if commit_id is not None:
+            return commit_id
+
+        existing_commit_id = await self._session.scalar(
+            select(Commit.id).where(
+                Commit.repository == repository,
+                Commit.hash == commit_hash,
+            )
+        )
+        if existing_commit_id is None:
+            msg = f"Commit '{repository}@{commit_hash}' could not be resolved."
+            raise RuntimeError(msg)
+        return existing_commit_id
+
+    async def _persist_artifacts(self, manifest_id: uuid.UUID, payload: IngestPayload) -> None:
+        artifact_rows = [
+            {
+                "manifest_id": manifest_id,
+                "name": artifact.name,
+                "type": artifact.type,
+                "storage_uri": artifact.storage_uri,
+                "sha256_checksum": artifact.sha256,
+                "size_bytes": artifact.size_bytes,
+                "metadata_": artifact.metadata,
+            }
+            for artifact in payload.artifacts
+        ]
+        if artifact_rows:
+            await self._session.execute(insert(Artifact).values(artifact_rows))
+
+
+class BuildEventProcessor:
+    """Application service that owns transaction boundaries for build processing."""
+
+    def __init__(
+        self,
+        session_factory_provider: Callable[[], async_sessionmaker[AsyncSession]],
+        signer: ManifestSignatureService,
+    ) -> None:
+        self._session_factory_provider = session_factory_provider
+        self._signer = signer
+
+    async def process(self, payload: IngestPayload) -> PersistedBuildResult:
+        """Persist one build payload in a single transaction."""
+        session_factory = self._session_factory_provider()
+        async with session_factory() as session:
+            async with session.begin():
+                service = BuildPersistenceService(session, self._signer)
+                result = await service.persist_payload(payload)
+            return result
+
+
+def _build_default_product_name(product_external_id: str) -> str:
+    normalized = re.sub(r"[-_]+", " ", product_external_id.strip())
+    tokens = normalized.split()
+    if not tokens:
+        return product_external_id
+
+    def _normalize_token(token: str) -> str:
+        if token.isupper() or any(char.isdigit() for char in token):
+            return token.upper()
+        return token.capitalize()
+
+    return " ".join(_normalize_token(token) for token in tokens)
+
+
+def _infer_release_type(version: str) -> str | None:
+    match = re.search(r"[-_]?([A-Za-z]{2,10})$", version.strip())
+    if match is None:
+        return None
+    return match.group(1).upper()

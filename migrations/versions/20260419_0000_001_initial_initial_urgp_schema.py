@@ -1,10 +1,8 @@
-"""Initial URGP schema — 12 tables, 5 enums, indexes.
+"""Initial URGP schema: 12 tables, 5 enums, and baseline indexes.
 
 Revision ID: 001_initial
 Revises: None
 Create Date: 2026-04-19
-
-Reference: docs/05-technical-design.md § Data Model
 """
 
 from __future__ import annotations
@@ -23,9 +21,7 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    """Create initial URGP database schema."""
-
-    # ── Enums ──────────────────────────────────────────────
+    """Create the initial URGP database schema."""
     build_status_enum = sa.Enum(
         "ingesting",
         "hydrating",
@@ -65,15 +61,8 @@ def upgrade() -> None:
         "viewer",
         name="user_role",
     )
-
-    # Create enums explicitly
-    build_status_enum.create(op.get_bind(), checkfirst=True)
-    artifact_type_enum.create(op.get_bind(), checkfirst=True)
-    notification_channel_enum.create(op.get_bind(), checkfirst=True)
-    build_type_enum.create(op.get_bind(), checkfirst=True)
     user_role_enum.create(op.get_bind(), checkfirst=True)
 
-    # ── Table 1: products ──────────────────────────────────
     op.create_table(
         "products",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -85,7 +74,6 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
     )
 
-    # ── Table 2: releases ──────────────────────────────────
     op.create_table(
         "releases",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -97,7 +85,6 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
     )
 
-    # ── Table 3: build_manifests ───────────────────────────
     op.create_table(
         "build_manifests",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -119,7 +106,6 @@ def upgrade() -> None:
     op.create_index("ix_build_manifests_product_created", "build_manifests", ["product_id", "created_at"])
     op.create_index("ix_build_manifests_status", "build_manifests", ["status"])
 
-    # ── Table 4: artifacts ─────────────────────────────────
     op.create_table(
         "artifacts",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -140,7 +126,6 @@ def upgrade() -> None:
     )
     op.create_index("ix_artifacts_sha256", "artifacts", ["sha256_checksum"])
 
-    # ── Table 5: commits ───────────────────────────────────
     op.create_table(
         "commits",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -155,7 +140,6 @@ def upgrade() -> None:
     )
     op.create_index("ix_commits_hash", "commits", ["hash"], unique=True)
 
-    # ── Table 6: pull_requests ─────────────────────────────
     op.create_table(
         "pull_requests",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -171,7 +155,6 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
     )
 
-    # ── Table 7: issues ────────────────────────────────────
     op.create_table(
         "issues",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -187,7 +170,6 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
     )
 
-    # ── Table 8: build_commits (junction) ──────────────────
     op.create_table(
         "build_commits",
         sa.Column(
@@ -204,7 +186,6 @@ def upgrade() -> None:
         ),
     )
 
-    # ── Table 9: commit_prs (junction) ─────────────────────
     op.create_table(
         "commit_prs",
         sa.Column(
@@ -221,7 +202,6 @@ def upgrade() -> None:
         ),
     )
 
-    # ── Table 10: commit_issues (junction) ─────────────────
     op.create_table(
         "commit_issues",
         sa.Column(
@@ -238,7 +218,6 @@ def upgrade() -> None:
         ),
     )
 
-    # ── Table 11: notification_subscriptions ────────────────
     op.create_table(
         "notification_subscriptions",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -262,7 +241,6 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
     )
 
-    # ── Table 12: notifications ────────────────────────────
     op.create_table(
         "notifications",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -285,7 +263,6 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Drop all URGP tables and enums."""
-    # Drop tables in reverse dependency order
     op.drop_table("notifications")
     op.drop_table("notification_subscriptions")
     op.drop_table("commit_issues")
@@ -299,7 +276,6 @@ def downgrade() -> None:
     op.drop_table("releases")
     op.drop_table("products")
 
-    # Drop enums
     sa.Enum(name="user_role").drop(op.get_bind(), checkfirst=True)
     sa.Enum(name="build_type").drop(op.get_bind(), checkfirst=True)
     sa.Enum(name="notification_channel").drop(op.get_bind(), checkfirst=True)

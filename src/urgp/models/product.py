@@ -8,7 +8,7 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy import ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -27,7 +27,9 @@ class Product(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """
 
     __tablename__ = "products"
+    __table_args__ = (UniqueConstraint("external_id", name="uq_products_external_id"),)
 
+    external_id: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -47,7 +49,7 @@ class Product(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
 
     def __repr__(self) -> str:
-        return f"<Product(id={self.id}, name='{self.name}')>"
+        return f"<Product(id={self.id}, external_id='{self.external_id}', name='{self.name}')>"
 
 
 class Release(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -58,6 +60,7 @@ class Release(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """
 
     __tablename__ = "releases"
+    __table_args__ = (UniqueConstraint("product_id", "version", name="uq_releases_product_version"),)
 
     product_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),

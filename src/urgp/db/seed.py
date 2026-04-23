@@ -28,7 +28,7 @@ async def seed_database() -> None:
 
     async with session_factory() as session:
         # Check if product already exists
-        result = await session.execute(select(Product).where(Product.name == "S32 Design Studio"))
+        result = await session.execute(select(Product).where(Product.external_id == "s32-design-studio"))
         existing = result.scalar_one_or_none()
 
         if existing:
@@ -38,6 +38,7 @@ async def seed_database() -> None:
 
         # Create sample product
         product = Product(
+            external_id="s32-design-studio",
             name="S32 Design Studio",
             description="NXP S32 Design Studio IDE for automotive microcontrollers",
             git_config={
