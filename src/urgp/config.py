@@ -64,6 +64,10 @@ class URGPSettings(BaseSettings):
     # ─────────────────────────────────────────────
     default_git_provider: str = Field(default="github", description="Default Git provider: github | bitbucket | gitlab")
     default_issue_tracker: str = Field(default="jira", description="Default issue tracker: jira")
+    default_issue_regex: str = Field(
+        default=r"\b[A-Z][A-Z0-9]+-\d+\b",
+        description="Fallback regex for extracting issue identifiers from commit metadata",
+    )
 
     # ─────────────────────────────────────────────
     # Security
@@ -104,6 +108,25 @@ class URGPSettings(BaseSettings):
     smtp_from: str = Field(default="urgp@company.com", description="Sender email address")
     smtp_username: str = Field(default="", description="SMTP auth username (empty = no auth)")
     smtp_password: str = Field(default="", description="SMTP auth password")
+    notification_max_retries: int = Field(default=3, ge=1, le=10, description="Max notification delivery retries")
+    notification_retry_backoff_seconds: float = Field(
+        default=1.5,
+        ge=0.1,
+        le=60.0,
+        description="Base backoff for notification retries",
+    )
+    notification_wait_timeout_seconds: float = Field(
+        default=30.0,
+        ge=1.0,
+        le=300.0,
+        description="How long notification processing waits for a build to complete",
+    )
+    notification_poll_interval_seconds: float = Field(
+        default=0.5,
+        ge=0.1,
+        le=10.0,
+        description="Polling interval while waiting for build completion",
+    )
 
     # ─────────────────────────────────────────────
     # Rate Limiting
@@ -126,6 +149,10 @@ class URGPSettings(BaseSettings):
         description="Allowed CORS origins",
     )
     api_prefix: str = Field(default="/api/v1", description="API URL prefix")
+    portal_base_url: str = Field(
+        default="http://localhost:8000/portal",
+        description="Base URL used in notifications for deep links into the self-service portal",
+    )
 
     # ─────────────────────────────────────────────
     # Server

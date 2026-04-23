@@ -1,4 +1,4 @@
-"""FastAPI dependency injection for the Event Gateway."""
+"""FastAPI dependency injection for gateway and platform APIs."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Annotated, Any, cast
 
 import redis.asyncio as aioredis
 from fastapi import Depends, HTTPException, Request, status
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from urgp.middleware.api_key_auth import APIKeyDep
 from urgp.middleware.rate_limiter import RateLimiter
@@ -59,6 +60,23 @@ async def get_publisher(request: Request) -> EventPublisher:
             error="broker_unavailable",
         )
     return cast(EventPublisher, publisher)
+
+
+async def get_session_factory(request: Request) -> async_sessionmaker[AsyncSession]:
+    session_factory = getattr(request.app.state, "session_factory", None)
+    if session_factory is None:
+        raise _service_unavailable(
+            "Database session factory is unavailable. Platform queries are temporarily disabled.",
+            error="database_unavailable",
+        )
+    return cast(async_sessionmaker[AsyncSession], session_factory)
+
+
+async def get_user_id(request: Request, api_key: APIKeyDep) -> str:
+    user_id = request.headers.get("X-User-Id")
+    if user_id and user_id.strip():
+        return user_id.strip()
+    return f"api-key:{api_key[:8]}"
 
 
 async def get_idempotency_service(
@@ -125,6 +143,8 @@ async def require_read_access(request: Request, api_key: APIKeyDep) -> str:
 RedisDep = Annotated[RedisType, Depends(get_redis)]
 PublisherDep = Annotated[EventPublisher, Depends(get_publisher)]
 IdempotencyDep = Annotated[IdempotencyService, Depends(get_idempotency_service)]
+SessionFactoryDep = Annotated[async_sessionmaker[AsyncSession], Depends(get_session_factory)]
+UserIdDep = Annotated[str, Depends(get_user_id)]
 WriteAccessDep = Annotated[str, Depends(require_write_access)]
 ReadAccessDep = Annotated[str, Depends(require_read_access)]
 
@@ -133,10 +153,14 @@ __all__ = [
     "PublisherDep",
     "ReadAccessDep",
     "RedisDep",
+    "SessionFactoryDep",
+    "UserIdDep",
     "WriteAccessDep",
     "get_idempotency_service",
     "get_publisher",
     "get_redis",
+    "get_session_factory",
+    "get_user_id",
     "require_read_access",
     "require_write_access",
 ]

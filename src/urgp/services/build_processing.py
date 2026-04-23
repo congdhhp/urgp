@@ -10,13 +10,17 @@ from dataclasses import dataclass
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.orm import selectinload
 
+from urgp.config import URGPSettings
 from urgp.models.enums import BuildStatus
 from urgp.models.manifest import Artifact, BuildManifest
 from urgp.models.product import Product, Release
 from urgp.models.traceability import Commit, build_commits
 from urgp.schemas.ingest import IngestPayload
+from urgp.services.lifecycle import BuildLifecycleService
 from urgp.services.signature import ManifestSignatureService
+from urgp.services.traceability import TraceabilityHydrator
 
 
 @dataclass(frozen=True)
@@ -50,7 +54,7 @@ class BuildPersistenceService:
                 product_id=product_id,
                 release_id=release_id,
                 build_type=payload.build_type,
-                status=BuildStatus.COMPLETED,
+                status=BuildStatus.INGESTING,
                 traceability_incomplete=True,
                 cli_version=payload.cli_version,
                 ci_metadata=payload.ci_metadata.model_dump(mode="json") if payload.ci_metadata else None,
@@ -103,6 +107,24 @@ class BuildPersistenceService:
             created=True,
             traceability_incomplete=created_manifest.traceability_incomplete,
         )
+
+    async def get_manifest_for_processing(self, manifest_id: uuid.UUID) -> BuildManifest:
+        manifest = await self._session.scalar(
+            select(BuildManifest)
+            .options(
+                selectinload(BuildManifest.product),
+                selectinload(BuildManifest.release),
+                selectinload(BuildManifest.commits).selectinload(Commit.pull_requests),
+                selectinload(BuildManifest.commits).selectinload(Commit.issues),
+                selectinload(BuildManifest.artifacts),
+                selectinload(BuildManifest.notifications),
+            )
+            .where(BuildManifest.id == manifest_id)
+        )
+        if manifest is None:
+            msg = f"Manifest '{manifest_id}' could not be loaded for processing."
+            raise RuntimeError(msg)
+        return manifest
 
     async def _ensure_product(self, product_external_id: str) -> uuid.UUID:
         statement = (
@@ -231,9 +253,11 @@ class BuildEventProcessor:
         self,
         session_factory_provider: Callable[[], async_sessionmaker[AsyncSession]],
         signer: ManifestSignatureService,
+        settings: URGPSettings,
     ) -> None:
         self._session_factory_provider = session_factory_provider
         self._signer = signer
+        self._settings = settings
 
     async def process(self, payload: IngestPayload) -> PersistedBuildResult:
         """Persist one build payload in a single transaction."""
@@ -242,6 +266,22 @@ class BuildEventProcessor:
             async with session.begin():
                 service = BuildPersistenceService(session, self._signer)
                 result = await service.persist_payload(payload)
+                if result.created:
+                    manifest = await service.get_manifest_for_processing(result.manifest_id)
+                    lifecycle = BuildLifecycleService()
+                    lifecycle.transition(manifest, BuildStatus.HYDRATING, allow_noop=False)
+                    hydrator = TraceabilityHydrator(session, self._settings)
+                    hydration = await hydrator.hydrate(manifest, payload)
+                    manifest.traceability_incomplete = hydration.traceability_incomplete
+                    lifecycle.transition(manifest, BuildStatus.COMPLETED, allow_noop=False)
+                    result = PersistedBuildResult(
+                        manifest_id=result.manifest_id,
+                        product_id=result.product_id,
+                        release_id=result.release_id,
+                        signature=result.signature,
+                        created=result.created,
+                        traceability_incomplete=manifest.traceability_incomplete,
+                    )
             return result
 
 

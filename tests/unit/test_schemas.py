@@ -263,3 +263,53 @@ class TestIngestPayload:
             data["build_type"] = build_type
             payload = IngestPayload(**data)
             assert payload.build_type.value == build_type
+
+    def test_cli_v1_minimal_commit_backward_compatible(self) -> None:
+        """CLI v1 payloads (only repository, hash, branch) remain valid after schema extensions."""
+        data = _valid_payload()
+        data["commit_hashes"] = [
+            {"repository": "bitbucket.org/nxp/s32k3_dev", "hash": "a" * 40, "branch": "main"},
+        ]
+        payload = IngestPayload(**data)
+        commit = payload.commit_hashes[0]
+        assert commit.repository == "bitbucket.org/nxp/s32k3_dev"
+        assert commit.hash == "a" * 40
+        assert commit.branch == "main"
+        assert commit.author is None
+        assert commit.message is None
+        assert commit.committed_at is None
+        assert commit.issue_ids is None
+        assert commit.pull_request is None
+
+    def test_extended_commit_with_traceability_fields(self) -> None:
+        """Commit payloads with new traceability metadata (author, message, PR, issues) parse correctly."""
+        data = _valid_payload()
+        data["commit_hashes"] = [
+            {
+                "repository": "bitbucket.org/nxp/s32k3_dev",
+                "hash": "b" * 40,
+                "branch": "feature/ABC-123",
+                "author": "dev@example.com",
+                "message": "fix(core): resolve ABC-123 concurrency issue",
+                "committed_at": "2026-04-23T10:00:00Z",
+                "issue_ids": ["ABC-123", "ABC-456"],
+                "pull_request": {
+                    "external_id": "PR-789",
+                    "title": "Fix concurrency issue",
+                    "author": "dev@example.com",
+                    "source_branch": "feature/ABC-123",
+                    "target_branch": "main",
+                    "url": "https://bitbucket.org/nxp/s32k3_dev/pull-requests/789",
+                },
+            },
+        ]
+        payload = IngestPayload(**data)
+        commit = payload.commit_hashes[0]
+        assert commit.author == "dev@example.com"
+        assert commit.message == "fix(core): resolve ABC-123 concurrency issue"
+        assert commit.issue_ids == ["ABC-123", "ABC-456"]
+        assert commit.pull_request is not None
+        assert commit.pull_request.external_id == "PR-789"
+        assert commit.pull_request.title == "Fix concurrency issue"
+        assert commit.pull_request.source_branch == "feature/ABC-123"
+        assert commit.pull_request.target_branch == "main"

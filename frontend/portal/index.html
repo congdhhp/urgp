@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URGP Command Horizon</title>
+  <link rel="stylesheet" href="/portal/assets/app.css">
+</head>
+<body>
+  <div class="background-grid"></div>
+  <main class="shell">
+    <section class="hero">
+      <div class="eyebrow">Universal Release Governance Platform</div>
+      <h1>Command Horizon</h1>
+      <p class="hero-copy">
+        A self-service control plane for release governance, traceability, lifecycle control,
+        and build readiness across the platform.
+      </p>
+      <div class="hero-actions">
+        <button id="refresh-all" class="primary-button" type="button">Refresh Platform</button>
+        <a class="ghost-link" href="/docs" target="_blank" rel="noreferrer">Open API Docs</a>
+      </div>
+    </section>
+
+    <section class="control-strip card">
+      <div class="control-block">
+        <label for="api-key">API Key</label>
+        <input id="api-key" type="password" placeholder="Paste X-API-Key">
+      </div>
+      <div class="control-block">
+        <label for="user-id">User / Email</label>
+        <input id="user-id" type="text" placeholder="Used for subscriptions">
+      </div>
+      <div class="control-block">
+        <label>&nbsp;</label>
+        <button id="save-credentials" class="secondary-button" type="button">Save Session</button>
+      </div>
+      <div id="status-banner" class="status-banner">Awaiting credentials.</div>
+    </section>
+
+    <section class="metrics-grid" id="metrics-grid"></section>
+
+    <section class="content-grid">
+      <article class="card products-panel">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Products</div>
+            <h2>Onboarded Catalog</h2>
+          </div>
+          <span id="products-count" class="pill">0 products</span>
+        </div>
+        <div id="products-list" class="product-list empty-state">No data loaded yet.</div>
+      </article>
+
+      <article class="card builds-panel">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Builds</div>
+            <h2>Recent Activity</h2>
+          </div>
+          <span id="builds-count" class="pill">0 builds</span>
+        </div>
+        <div id="builds-list" class="build-list empty-state">No build activity loaded yet.</div>
+      </article>
+    </section>
+
+    <section class="detail-grid">
+      <article class="card build-detail-panel">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Detail</div>
+            <h2>Selected Build</h2>
+          </div>
+          <button id="verify-selected" class="secondary-button" type="button">Verify Integrity</button>
+        </div>
+        <div id="build-detail" class="empty-state">Choose a build to inspect its artifacts and traceability graph.</div>
+      </article>
+
+      <article class="card subscriptions-panel">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Notifications</div>
+            <h2>Subscriptions</h2>
+          </div>
+          <button id="refresh-subscriptions" class="secondary-button" type="button">Reload</button>
+        </div>
+        <form id="subscription-form" class="subscription-form">
+          <select id="subscription-product"></select>
+          <input id="subscription-release" type="text" placeholder="Optional release train">
+          <select id="subscription-channel">
+            <option value="email">Email</option>
+            <option value="webhook">Webhook</option>
+          </select>
+          <input id="subscription-webhook" type="url" placeholder="Webhook URL when channel=webhook">
+          <button class="primary-button" type="submit">Create Subscription</button>
+        </form>
+        <div id="subscriptions-list" class="subscription-list empty-state">No subscriptions loaded yet.</div>
+      </article>
+    </section>
+  </main>
+
+  <template id="metric-template">
+    <article class="metric-card">
+      <div class="metric-label"></div>
+      <div class="metric-value"></div>
+      <div class="metric-note"></div>
+    </article>
+  </template>
+
+  <script src="/portal/assets/app.js"></script>
+</body>
+</html>

@@ -5,10 +5,13 @@ from __future__ import annotations
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from urgp import __version__
 
@@ -82,18 +85,40 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    from urgp.api.activity import router as activity_router
     from urgp.api.admin import router as admin_router
+    from urgp.api.builds import router as builds_router
     from urgp.api.error_handlers import request_validation_exception_handler
     from urgp.api.health import router as health_router
     from urgp.api.ingest import router as ingest_router
+    from urgp.api.notifications import router as notifications_router
+    from urgp.api.products import router as products_router
 
     app.add_exception_handler(
         RequestValidationError,
         request_validation_exception_handler,
     )
 
+    portal_dir = Path(__file__).resolve().parents[2] / "frontend" / "portal"
+    if portal_dir.exists():
+        assets_dir = portal_dir / "assets"
+        if assets_dir.exists():
+            app.mount("/portal/assets", StaticFiles(directory=assets_dir), name="portal-assets")
+
+        @app.get("/", include_in_schema=False)
+        async def root_redirect() -> RedirectResponse:
+            return RedirectResponse(url="/portal")
+
+        @app.get("/portal", include_in_schema=False)
+        async def portal_index() -> FileResponse:
+            return FileResponse(portal_dir / "index.html")
+
     app.include_router(health_router)
     app.include_router(ingest_router)
+    app.include_router(activity_router)
+    app.include_router(builds_router)
+    app.include_router(products_router)
+    app.include_router(notifications_router)
     app.include_router(admin_router)
 
     return app

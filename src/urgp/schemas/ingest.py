@@ -16,6 +16,46 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from urgp.models.enums import ArtifactType, BuildType
 
 
+class PullRequestSchema(BaseModel):
+    """Optional pull request metadata attached to a commit."""
+
+    external_id: str = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="External pull request identifier such as 1234 or PR-1234",
+    )
+    title: str | None = Field(
+        default=None,
+        max_length=2000,
+        description="Pull request title",
+    )
+    author: str | None = Field(
+        default=None,
+        max_length=255,
+        description="Pull request author",
+    )
+    source_branch: str | None = Field(
+        default=None,
+        max_length=255,
+        description="Source branch for the change",
+    )
+    target_branch: str | None = Field(
+        default=None,
+        max_length=255,
+        description="Target branch for the change",
+    )
+    merge_timestamp: datetime | None = Field(
+        default=None,
+        description="When the pull request was merged",
+    )
+    url: str | None = Field(
+        default=None,
+        max_length=1000,
+        description="Deep link to the pull request",
+    )
+
+
 class CommitHashSchema(BaseModel):
     """A single commit reference within a build.
 
@@ -43,6 +83,28 @@ class CommitHashSchema(BaseModel):
         max_length=255,
         description="Branch name the commit belongs to",
         examples=["main", "develop"],
+    )
+    author: str | None = Field(
+        default=None,
+        max_length=255,
+        description="Optional commit author for richer traceability and portal views",
+    )
+    message: str | None = Field(
+        default=None,
+        max_length=5000,
+        description="Optional commit message used for issue extraction and change summaries",
+    )
+    committed_at: datetime | None = Field(
+        default=None,
+        description="Optional commit timestamp from the source control system",
+    )
+    issue_ids: list[str] | None = Field(
+        default=None,
+        description="Optional explicit issue identifiers already resolved by the producer",
+    )
+    pull_request: PullRequestSchema | None = Field(
+        default=None,
+        description="Optional pull request metadata if the producer already knows it",
     )
 
 

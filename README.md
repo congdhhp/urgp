@@ -62,6 +62,15 @@ docker compose exec urgp-api python -m urgp.db.seed
 
 Current backend implementation includes the Event Gateway, RabbitMQ topology/publisher, Redis-backed idempotency and rate limiting, and a worker-driven control-plane persistence pipeline for manifests, artifacts, and commit links.
 
+The current platform slice now runs end-to-end:
+
+- `POST /api/v1/ingest` accepts and publishes build events.
+- The worker persists manifests through `ingesting -> hydrating -> completed`.
+- Traceability hydration enriches commits with optional PR and issue metadata.
+- `GET /api/v1/products`, `GET /api/v1/builds`, compare/search/verify APIs, and notification subscription APIs are available for portal and automation use.
+- A lightweight self-service portal is served directly by FastAPI at `http://localhost:8000/portal`.
+- Email notifications can be smoke-tested locally through MailHog at `http://localhost:8025`.
+
 ## License
 
 See [LICENSE](LICENSE) for details.
