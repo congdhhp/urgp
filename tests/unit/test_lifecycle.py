@@ -9,10 +9,15 @@ import pytest
 
 from urgp.models.enums import BuildStatus, BuildType
 from urgp.models.manifest import BuildManifest
-from urgp.services.lifecycle import BuildLifecycleService, ImmutableManifestError, InvalidBuildTransitionError
+from urgp.services.lifecycle import (
+    BuildLifecycleService,
+    ImmutableManifestError,
+    InvalidBuildTransitionError,
+    SignatureVerificationError,
+)
 
 
-def _manifest(status: BuildStatus) -> BuildManifest:
+def _manifest(status: BuildStatus, *, signature: str | None = None) -> BuildManifest:
     return BuildManifest(
         id=uuid.uuid4(),
         build_id="260330",
@@ -21,6 +26,7 @@ def _manifest(status: BuildStatus) -> BuildManifest:
         build_type=BuildType.NIGHTLY,
         status=status,
         traceability_incomplete=False,
+        signature=signature,
         created_at=datetime.now(tz=UTC),
         updated_at=datetime.now(tz=UTC),
     )
@@ -54,3 +60,57 @@ class TestBuildLifecycleService:
 
         service.transition(manifest, BuildStatus.DEPRECATED, allow_noop=False)
         assert manifest.status == BuildStatus.DEPRECATED
+
+
+class TestSignatureVerificationOnRelease:
+    """P1-4.9: HMAC signature re-verification before release transition."""
+
+    def test_unsigned_manifest_cannot_be_released_with_verification(self) -> None:
+        """Unsigned manifests are rejected when verification is enabled."""
+        service = BuildLifecycleService()
+        manifest = _manifest(BuildStatus.TESTING, signature=None)
+
+        with pytest.raises(SignatureVerificationError, match="no signature"):
+            service.transition(
+                manifest,
+                BuildStatus.RELEASED,
+                verify_signature=True,
+                signing_key="test-secret",
+            )
+
+    def test_release_without_verification_skips_check(self) -> None:
+        """Release without verify_signature=True skips signature check."""
+        service = BuildLifecycleService()
+        manifest = _manifest(BuildStatus.TESTING, signature=None)
+
+        transition = service.transition(manifest, BuildStatus.RELEASED)
+        assert transition.changed is True
+        assert manifest.status == BuildStatus.RELEASED
+
+    def test_tampered_signature_is_rejected(self) -> None:
+        """Manifest with wrong signature is rejected on release."""
+        service = BuildLifecycleService()
+        manifest = _manifest(BuildStatus.TESTING, signature="tampered_signature_hex")
+
+        with pytest.raises(SignatureVerificationError, match="verification failed"):
+            service.transition(
+                manifest,
+                BuildStatus.RELEASED,
+                verify_signature=True,
+                signing_key="test-secret",
+            )
+
+    def test_no_signing_key_skips_verification_gracefully(self) -> None:
+        """Missing signing key logs warning but does not block release."""
+        service = BuildLifecycleService()
+        manifest = _manifest(BuildStatus.TESTING, signature="some_signature")
+
+        transition = service.transition(
+            manifest,
+            BuildStatus.RELEASED,
+            verify_signature=True,
+            signing_key=None,  # Not configured
+        )
+        assert transition.changed is True
+        assert manifest.status == BuildStatus.RELEASED
+

@@ -9,6 +9,8 @@ from aio_pika.abc import AbstractIncomingMessage, AbstractRobustConnection
 from pydantic import ValidationError
 
 from urgp.config import get_settings
+from urgp.integrations.git import create_git_provider
+from urgp.integrations.issues import create_issue_tracker
 from urgp.messaging.connection import create_rabbitmq_connection
 from urgp.messaging.topology import (
     EXCHANGE_DLX,
@@ -19,6 +21,7 @@ from urgp.messaging.topology import (
 from urgp.runtime import AppResources
 from urgp.schemas.ingest import IngestPayload
 from urgp.services.build_processing import BuildEventProcessor
+from urgp.services.cache import CacheService
 from urgp.services.notification_processing import NotificationProcessingService
 from urgp.services.signature import ManifestSignatureService
 
@@ -93,7 +96,7 @@ class WorkerProcess:
         try:
             await self._resources.open(
                 with_database=True,
-                with_redis=False,
+                with_redis=True,
                 with_publisher=False,
                 ensure_rabbitmq_topology=True,
             )
@@ -148,7 +151,27 @@ async def start_worker() -> None:
     settings = get_settings()
     resources = AppResources(settings)
     signer = ManifestSignatureService(settings.signing_key)
-    processor = BuildEventProcessor(resources.require_session_factory, signer, settings)
+
+    # Create cache service for API response caching
+    cache = CacheService(resources.redis, default_ttl=settings.redis_cache_ttl)
+
+    # Create external integration providers (may be None if not configured globally)
+    git_provider = create_git_provider(
+        {"provider": settings.default_git_provider, "token": ""},
+        cache=cache,
+    )
+    issue_tracker = create_issue_tracker(
+        {"tracker": settings.default_issue_tracker, "token": ""},
+        cache=cache,
+    )
+
+    processor = BuildEventProcessor(
+        resources.require_session_factory,
+        signer,
+        settings,
+        git_provider=git_provider,
+        issue_tracker=issue_tracker,
+    )
     notification_service = NotificationProcessingService(resources.require_session_factory, settings)
     hydration_worker = HydrationWorker(resources, processor)
     notification_worker = NotificationWorker(notification_service)

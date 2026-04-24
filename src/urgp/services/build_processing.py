@@ -13,6 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import selectinload
 
 from urgp.config import URGPSettings
+from urgp.integrations.git.base import GitProvider
+from urgp.integrations.issues.base import IssueTracker
 from urgp.models.enums import BuildStatus
 from urgp.models.manifest import Artifact, BuildManifest
 from urgp.models.product import Product, Release
@@ -140,9 +142,7 @@ class BuildPersistenceService:
         if created_id is not None:
             return created_id
 
-        existing_id = await self._session.scalar(
-            select(Product.id).where(Product.external_id == product_external_id)
-        )
+        existing_id = await self._session.scalar(select(Product.id).where(Product.external_id == product_external_id))
         if existing_id is None:
             msg = f"Product '{product_external_id}' could not be resolved."
             raise RuntimeError(msg)
@@ -254,10 +254,15 @@ class BuildEventProcessor:
         session_factory_provider: Callable[[], async_sessionmaker[AsyncSession]],
         signer: ManifestSignatureService,
         settings: URGPSettings,
+        *,
+        git_provider: GitProvider | None = None,
+        issue_tracker: IssueTracker | None = None,
     ) -> None:
         self._session_factory_provider = session_factory_provider
         self._signer = signer
         self._settings = settings
+        self._git_provider = git_provider
+        self._issue_tracker = issue_tracker
 
     async def process(self, payload: IngestPayload) -> PersistedBuildResult:
         """Persist one build payload in a single transaction."""
@@ -270,7 +275,12 @@ class BuildEventProcessor:
                     manifest = await service.get_manifest_for_processing(result.manifest_id)
                     lifecycle = BuildLifecycleService()
                     lifecycle.transition(manifest, BuildStatus.HYDRATING, allow_noop=False)
-                    hydrator = TraceabilityHydrator(session, self._settings)
+                    hydrator = TraceabilityHydrator(
+                        session,
+                        self._settings,
+                        git_provider=self._git_provider,
+                        issue_tracker=self._issue_tracker,
+                    )
                     hydration = await hydrator.hydrate(manifest, payload)
                     manifest.traceability_incomplete = hydration.traceability_incomplete
                     lifecycle.transition(manifest, BuildStatus.COMPLETED, allow_noop=False)
