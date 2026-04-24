@@ -128,7 +128,6 @@ class TestProductsApi:
         assert response.json()["total"] == 1
 
     def test_list_releases_returns_404_for_unknown_product(self, platform_client: TestClient) -> None:
-
         with patch("urgp.api.products.PlatformQueryService") as service_cls:
             service_cls.return_value.list_releases = AsyncMock(side_effect=ProductNotFoundError("missing"))
             response = platform_client.get("/api/v1/products/missing/releases", headers={"X-API-Key": _TEST_API_KEY})
@@ -139,7 +138,6 @@ class TestProductsApi:
 
 class TestBuildsApi:
     def test_get_build_returns_detail_payload(self, platform_client: TestClient) -> None:
-
         with patch("urgp.api.builds.PlatformQueryService") as service_cls:
             service_cls.return_value.get_build = AsyncMock(return_value=_build_detail())
             response = platform_client.get(
@@ -152,7 +150,6 @@ class TestBuildsApi:
         assert response.json()["build_id"] == "260330"
 
     def test_transition_build_status_maps_conflict(self, platform_client: TestClient) -> None:
-
         with patch("urgp.api.builds.PlatformQueryService") as service_cls:
             service_cls.return_value.transition_build_status = AsyncMock(
                 side_effect=InvalidBuildTransitionError("invalid transition")
@@ -197,7 +194,6 @@ class TestBuildsApi:
         assert response.json()["integrity_status"] == "valid"
 
     def test_lookup_conflict_returns_409(self, platform_client: TestClient) -> None:
-
         with patch("urgp.api.builds.PlatformQueryService") as service_cls:
             service_cls.return_value.get_build = AsyncMock(side_effect=AmbiguousBuildReferenceError("ambiguous"))
             response = platform_client.get("/api/v1/builds/260330", headers={"X-API-Key": _TEST_API_KEY})
@@ -205,7 +201,6 @@ class TestBuildsApi:
         assert response.status_code == 409
 
     def test_missing_build_returns_404(self, platform_client: TestClient) -> None:
-
         with patch("urgp.api.builds.PlatformQueryService") as service_cls:
             service_cls.return_value.get_build = AsyncMock(side_effect=BuildNotFoundError("missing"))
             response = platform_client.get("/api/v1/builds/260330", headers={"X-API-Key": _TEST_API_KEY})
@@ -240,9 +235,7 @@ class TestActivityAndNotificationsApi:
 
         with patch("urgp.api.notifications.NotificationProcessingService") as service_cls:
             service = service_cls.return_value
-            service.list_subscriptions = AsyncMock(
-                return_value=SubscriptionListResponse(items=[subscription], total=1)
-            )
+            service.list_subscriptions = AsyncMock(return_value=SubscriptionListResponse(items=[subscription], total=1))
             service.create_subscription = AsyncMock(return_value=subscription)
             service.delete_subscription = AsyncMock(return_value=None)
 
@@ -269,11 +262,8 @@ class TestActivityAndNotificationsApi:
         assert delete_response.status_code == 204
 
     def test_delete_subscription_returns_404_when_missing(self, platform_client: TestClient) -> None:
-
         with patch("urgp.api.notifications.NotificationProcessingService") as service_cls:
-            service_cls.return_value.delete_subscription = AsyncMock(
-                side_effect=SubscriptionNotFoundError("missing")
-            )
+            service_cls.return_value.delete_subscription = AsyncMock(side_effect=SubscriptionNotFoundError("missing"))
             response = platform_client.delete(
                 f"/api/v1/notifications/subscriptions/{uuid.uuid4()}",
                 headers={"X-API-Key": _TEST_API_KEY, "X-User-Id": "qa@example.com"},

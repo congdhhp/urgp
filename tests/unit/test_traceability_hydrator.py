@@ -329,9 +329,12 @@ class TestTraceabilityHydratorMultiRepo:
         # Total for 3 commits: [commit0, None, commit1, None, commit2, None]
         session.scalar = AsyncMock(
             side_effect=[
-                _make_mock_commit(0), None,  # commit 0 + issue PROJ-100
-                _make_mock_commit(1), None,  # commit 1 + issue PROJ-200
-                _make_mock_commit(2), None,  # commit 2 + issue PROJ-300
+                _make_mock_commit(0),
+                None,  # commit 0 + issue PROJ-100
+                _make_mock_commit(1),
+                None,  # commit 1 + issue PROJ-200
+                _make_mock_commit(2),
+                None,  # commit 2 + issue PROJ-300
             ]
         )
 
@@ -366,4 +369,3 @@ class TestCacheServiceUnit:
         cache = CacheService(redis)
         result = await cache.get_json("key")
         assert result is None  # Graceful degradation
-

@@ -152,7 +152,9 @@ class NotificationProcessingService:
                 if record is None:
                     continue  # already sent
                 subject, body, payload = self._render_notification(manifest, subscription)
-                pending_deliveries.append((record.id, subscription.channel, subscription.user_id, subject, body, payload))
+                pending_deliveries.append(
+                    (record.id, subscription.channel, subscription.user_id, subject, body, payload)
+                )
             await session.commit()
 
         # Phase 2: Deliver notifications OUTSIDE any database transaction.
@@ -288,31 +290,31 @@ class NotificationProcessingService:
         manifest: BuildManifest,
         subscription: NotificationSubscription,
     ) -> tuple[str, str, dict[str, object]]:
-        pull_request_count = len({pull_request.id for commit in manifest.commits for pull_request in commit.pull_requests})
+        pull_request_count = len(
+            {pull_request.id for commit in manifest.commits for pull_request in commit.pull_requests}
+        )
         issue_count = len({issue.id for commit in manifest.commits for issue in commit.issues})
         release_value = manifest.release.version if manifest.release is not None else "unassigned"
-        portal_link = (
-            f"{self._settings.portal_base_url.rstrip('/')}/?build={manifest.build_id}&product={manifest.product.external_id}"
-        )
+        portal_link = f"{self._settings.portal_base_url.rstrip('/')}/?build={manifest.build_id}&product={manifest.product.external_id}"
 
         payload = cast(
             dict[str, object],
             {
-            "build_id": manifest.build_id,
-            "product": manifest.product.name,
-            "product_id": manifest.product.external_id,
-            "release": release_value,
-            "build_type": manifest.build_type.value,
-            "status": manifest.status.value,
-            "changes_summary": {
-                "commits": len(manifest.commits),
-                "pull_requests": pull_request_count,
-                "issues": issue_count,
-            },
-            "portal_url": portal_link,
-            "subscription_channel": subscription.channel.value,
-            "timestamp": manifest.created_at.isoformat(),
-            "_webhook_url": subscription.webhook_url,
+                "build_id": manifest.build_id,
+                "product": manifest.product.name,
+                "product_id": manifest.product.external_id,
+                "release": release_value,
+                "build_type": manifest.build_type.value,
+                "status": manifest.status.value,
+                "changes_summary": {
+                    "commits": len(manifest.commits),
+                    "pull_requests": pull_request_count,
+                    "issues": issue_count,
+                },
+                "portal_url": portal_link,
+                "subscription_channel": subscription.channel.value,
+                "timestamp": manifest.created_at.isoformat(),
+                "_webhook_url": subscription.webhook_url,
             },
         )
 

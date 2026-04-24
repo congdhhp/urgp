@@ -113,4 +113,3 @@ class TestSignatureVerificationOnRelease:
         )
         assert transition.changed is True
         assert manifest.status == BuildStatus.RELEASED
-

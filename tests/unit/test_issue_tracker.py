@@ -178,23 +178,27 @@ class TestIssueTrackerFactory:
     def test_jira_tracker_from_config(self) -> None:
         from urgp.integrations.issues import create_issue_tracker
 
-        tracker = create_issue_tracker({
-            "tracker": "jira",
-            "token": "test-token",
-            "api_base_url": "https://jira.example.com",
-        })
+        tracker = create_issue_tracker(
+            {
+                "tracker": "jira",
+                "token": "test-token",
+                "api_base_url": "https://jira.example.com",
+            }
+        )
         assert tracker is not None
         assert isinstance(tracker, JiraTracker)
 
     def test_jira_with_email_auth(self) -> None:
         from urgp.integrations.issues import create_issue_tracker
 
-        tracker = create_issue_tracker({
-            "tracker": "jira",
-            "token": "test-token",
-            "api_base_url": "https://jira.example.com",
-            "email": "admin@example.com",
-        })
+        tracker = create_issue_tracker(
+            {
+                "tracker": "jira",
+                "token": "test-token",
+                "api_base_url": "https://jira.example.com",
+                "email": "admin@example.com",
+            }
+        )
         assert tracker is not None
         assert isinstance(tracker, JiraTracker)
         assert tracker._email == "admin@example.com"
@@ -220,9 +224,11 @@ class TestIssueTrackerFactory:
     def test_unknown_tracker_returns_none(self) -> None:
         from urgp.integrations.issues import create_issue_tracker
 
-        tracker = create_issue_tracker({
-            "tracker": "gitlab",
-            "token": "test-token",
-            "api_base_url": "https://gitlab.example.com",
-        })
+        tracker = create_issue_tracker(
+            {
+                "tracker": "gitlab",
+                "token": "test-token",
+                "api_base_url": "https://gitlab.example.com",
+            }
+        )
         assert tracker is None
