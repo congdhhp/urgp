@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import datetime
 from pathlib import Path
-from typing import Optional
 from urllib.parse import quote
 
 import typer
@@ -141,24 +140,24 @@ def push_command(
         help="Prefix for artifact storage URIs (e.g., 'https://artifacts.example.com/'). "
         "Artifact filename is appended automatically.",
     ),
-    commit_branch: Optional[str] = typer.Option(  # noqa: UP007
+    commit_branch: str | None = typer.Option(
         None,
         "--commit-branch",
         help="Branch name for all commits (optional).",
     ),
-    ci_system: Optional[str] = typer.Option(  # noqa: UP007
+    ci_system: str | None = typer.Option(
         None,
         "--ci-system",
         envvar="CI_SYSTEM",
         help="CI system name (e.g., 'Jenkins').",
     ),
-    pipeline_url: Optional[str] = typer.Option(  # noqa: UP007
+    pipeline_url: str | None = typer.Option(
         None,
         "--pipeline-url",
         envvar="BUILD_URL",
         help="URL to the CI/CD pipeline run.",
     ),
-    triggered_by: Optional[str] = typer.Option(  # noqa: UP007
+    triggered_by: str | None = typer.Option(
         None,
         "--triggered-by",
         help="User or trigger that initiated the build.",

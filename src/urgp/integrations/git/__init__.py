@@ -24,6 +24,25 @@ from urgp.integrations.git.github import GitHubProvider
 from urgp.services.cache import CacheService
 
 
+def _resolve_string(config: dict[str, Any], *keys: str) -> str | None:
+    for key in keys:
+        value = config.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return None
+
+
+def _resolve_token(config: dict[str, Any]) -> str | None:
+    token = _resolve_string(config, "token", "authentication_token")
+    if token is not None:
+        return token
+
+    credentials = config.get("credentials")
+    if isinstance(credentials, dict):
+        return _resolve_string(credentials, "token", "authentication_token")
+    return None
+
+
 def create_git_provider(
     git_config: dict[str, Any] | None,
     *,
@@ -44,14 +63,14 @@ def create_git_provider(
     if git_config is None:
         return None
 
-    token = git_config.get("token")
-    if not isinstance(token, str) or not token.strip():
+    token = _resolve_token(git_config)
+    if token is None:
         return None
 
     provider_type = str(git_config.get("provider", default_provider)).lower()
-    api_base_url = git_config.get("api_base_url")
+    api_base_url = _resolve_string(git_config, "api_base_url", "base_url")
     kwargs: dict[str, Any] = {"cache": cache}
-    if isinstance(api_base_url, str) and api_base_url.strip():
+    if api_base_url is not None:
         kwargs["api_base_url"] = api_base_url
 
     if provider_type == "github":

@@ -58,7 +58,7 @@ class ProductNotFoundError(LookupError):
 
 def _manifest_load_options() -> tuple[ExecutableOption, ...]:
     return cast(
-        tuple[ExecutableOption, ...],
+        "tuple[ExecutableOption, ...]",
         (
             selectinload(BuildManifest.product),
             selectinload(BuildManifest.release),
@@ -270,18 +270,18 @@ class PlatformQueryService:
 
         async with self._session_factory() as session:
             totals = ActivityTotalsResponse(
-                products=cast(int, await session.scalar(select(func.count(Product.id))) or 0),
-                releases=cast(int, await session.scalar(select(func.count(Release.id))) or 0),
-                builds=cast(int, await session.scalar(select(func.count(BuildManifest.id))) or 0),
+                products=cast("int", await session.scalar(select(func.count(Product.id))) or 0),
+                releases=cast("int", await session.scalar(select(func.count(Release.id))) or 0),
+                builds=cast("int", await session.scalar(select(func.count(BuildManifest.id))) or 0),
                 released_builds=cast(
-                    int,
+                    "int",
                     await session.scalar(
                         select(func.count(BuildManifest.id)).where(BuildManifest.status == BuildStatus.RELEASED)
                     )
                     or 0,
                 ),
                 incomplete_builds=cast(
-                    int,
+                    "int",
                     await session.scalar(
                         select(func.count(BuildManifest.id)).where(BuildManifest.traceability_incomplete.is_(True))
                     )
@@ -313,7 +313,10 @@ class PlatformQueryService:
                 status=status,
                 traceability_incomplete=traceability_incomplete,
             )
-            total = cast(int, await session.scalar(select(func.count()).select_from(base_stmt.subquery())) or 0)
+            total = cast(
+                "int",
+                await session.scalar(select(func.count()).select_from(base_stmt.order_by(None).subquery())) or 0,
+            )
             result = await session.scalars(base_stmt.options(*_manifest_load_options()).offset(offset).limit(limit))
             manifests = list(result.all())
 
@@ -452,7 +455,7 @@ class PlatformQueryService:
                 .options(*_manifest_load_options())
                 .order_by(BuildManifest.created_at.desc())
             )
-            manifests = list(result.all())
+            manifests = list(result.unique().all())
 
         return BuildSearchResponse(
             query=commit_hash,
@@ -470,7 +473,7 @@ class PlatformQueryService:
                 .options(*_manifest_load_options())
                 .order_by(BuildManifest.created_at.desc())
             )
-            manifests = list(result.all())
+            manifests = list(result.unique().all())
 
         return BuildSearchResponse(
             query=issue_id,

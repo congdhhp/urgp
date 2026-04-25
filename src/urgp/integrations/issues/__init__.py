@@ -19,6 +19,25 @@ from urgp.integrations.issues.jira import JiraTracker
 from urgp.services.cache import CacheService
 
 
+def _resolve_string(config: dict[str, Any], *keys: str) -> str | None:
+    for key in keys:
+        value = config.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return None
+
+
+def _resolve_token(config: dict[str, Any]) -> str | None:
+    token = _resolve_string(config, "token", "authentication_token")
+    if token is not None:
+        return token
+
+    credentials = config.get("credentials")
+    if isinstance(credentials, dict):
+        return _resolve_string(credentials, "token", "authentication_token")
+    return None
+
+
 def create_issue_tracker(
     issue_config: dict[str, Any] | None,
     *,
@@ -40,21 +59,24 @@ def create_issue_tracker(
     if issue_config is None:
         return None
 
-    token = issue_config.get("token")
-    if not isinstance(token, str) or not token.strip():
+    token = _resolve_token(issue_config)
+    if token is None:
         return None
 
-    api_base_url = issue_config.get("api_base_url")
-    if not isinstance(api_base_url, str) or not api_base_url.strip():
+    api_base_url = _resolve_string(issue_config, "api_base_url", "base_url")
+    if api_base_url is None:
         return None
 
     tracker_type = str(issue_config.get("tracker", default_tracker)).lower()
 
     if tracker_type == "jira":
-        email = issue_config.get("email", "")
+        email = _resolve_string(issue_config, "email")
+        credentials = issue_config.get("credentials")
+        if email is None and isinstance(credentials, dict):
+            email = _resolve_string(credentials, "email")
         return JiraTracker(
             api_base_url,
-            email=str(email) if email else "",
+            email=email or "",
             token=token,
             cache=cache,
         )

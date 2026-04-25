@@ -281,3 +281,17 @@ class TestGitProviderFactory:
         assert provider is not None
         assert isinstance(provider, GitHubProvider)
         assert provider._api_base_url == "https://github.internal.com/api/v3"
+
+    def test_nested_credentials_and_base_url_alias(self) -> None:
+        from urgp.integrations.git import create_git_provider
+
+        provider = create_git_provider(
+            {
+                "provider": "github",
+                "credentials": {"authentication_token": "test-token"},
+                "base_url": "https://github.internal.com/api/v3",
+            }
+        )
+        assert provider is not None
+        assert isinstance(provider, GitHubProvider)
+        assert provider._api_base_url == "https://github.internal.com/api/v3"

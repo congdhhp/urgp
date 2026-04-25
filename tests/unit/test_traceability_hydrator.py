@@ -363,6 +363,19 @@ class TestCacheServiceUnit:
         assert CacheService(None).available is False
         assert CacheService(MagicMock()).available is True
 
+    async def test_provider_exposes_late_bound_redis(self) -> None:
+        redis_holder: dict[str, MagicMock | None] = {"client": None}
+        cache = CacheService(redis_client_provider=lambda: redis_holder["client"])
+
+        assert cache.available is False
+
+        redis = MagicMock()
+        redis.get = AsyncMock(return_value='{"status":"ok"}')
+        redis_holder["client"] = redis
+
+        assert cache.available is True
+        assert await cache.get_json("health") == {"status": "ok"}
+
     async def test_redis_error_returns_none(self) -> None:
         redis = MagicMock()
         redis.get = AsyncMock(side_effect=ConnectionError("Redis down"))

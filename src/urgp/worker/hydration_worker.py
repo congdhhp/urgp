@@ -9,8 +9,6 @@ from aio_pika.abc import AbstractIncomingMessage, AbstractRobustConnection
 from pydantic import ValidationError
 
 from urgp.config import get_settings
-from urgp.integrations.git import create_git_provider
-from urgp.integrations.issues import create_issue_tracker
 from urgp.messaging.connection import create_rabbitmq_connection
 from urgp.messaging.topology import (
     EXCHANGE_DLX,
@@ -152,25 +150,16 @@ async def start_worker() -> None:
     resources = AppResources(settings)
     signer = ManifestSignatureService(settings.signing_key)
 
-    # Create cache service for API response caching
-    cache = CacheService(resources.redis, default_ttl=settings.redis_cache_ttl)
-
-    # Create external integration providers (may be None if not configured globally)
-    git_provider = create_git_provider(
-        {"provider": settings.default_git_provider, "token": ""},
-        cache=cache,
-    )
-    issue_tracker = create_issue_tracker(
-        {"tracker": settings.default_issue_tracker, "token": ""},
-        cache=cache,
+    cache = CacheService(
+        redis_client_provider=lambda: resources.redis,
+        default_ttl=settings.redis_cache_ttl,
     )
 
     processor = BuildEventProcessor(
         resources.require_session_factory,
         signer,
         settings,
-        git_provider=git_provider,
-        issue_tracker=issue_tracker,
+        cache=cache,
     )
     notification_service = NotificationProcessingService(resources.require_session_factory, settings)
     hydration_worker = HydrationWorker(resources, processor)

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Callable
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -27,20 +28,33 @@ class CacheService:
     If Redis is unavailable, all operations silently return None / no-op.
     """
 
-    def __init__(self, redis_client: Any | None, *, default_ttl: int = 300) -> None:
+    def __init__(
+        self,
+        redis_client: Any | None = None,
+        *,
+        redis_client_provider: Callable[[], Any | None] | None = None,
+        default_ttl: int = 300,
+    ) -> None:
         """Initialize cache service.
 
         Args:
             redis_client: An initialized redis.asyncio.Redis instance, or None to disable caching.
+            redis_client_provider: Deferred provider that resolves the active Redis client on demand.
             default_ttl: Default time-to-live in seconds (default: 300 = 5 minutes).
         """
         self._redis = redis_client
+        self._redis_client_provider = redis_client_provider
         self._default_ttl = default_ttl
 
     @property
     def available(self) -> bool:
         """Check if Redis client is available."""
-        return self._redis is not None
+        return self._get_redis() is not None
+
+    def _get_redis(self) -> Any | None:
+        if self._redis_client_provider is not None:
+            return self._redis_client_provider()
+        return self._redis
 
     async def get_json(self, key: str) -> Any | None:
         """Get a cached JSON value by key.
@@ -48,11 +62,12 @@ class CacheService:
         Returns:
             Deserialized JSON value, or None if not found or Redis unavailable.
         """
-        if self._redis is None:
+        redis_client = self._get_redis()
+        if redis_client is None:
             return None
 
         try:
-            raw = await self._redis.get(f"cache:{key}")
+            raw = await redis_client.get(f"cache:{key}")
             if raw is None:
                 return None
             return json.loads(raw)
@@ -68,38 +83,41 @@ class CacheService:
             value: JSON-serializable value
             ttl: Time-to-live in seconds (uses default if not specified)
         """
-        if self._redis is None:
+        redis_client = self._get_redis()
+        if redis_client is None:
             return
 
         try:
             ttl_seconds = ttl if ttl is not None else self._default_ttl
             serialized = json.dumps(value, default=str)
-            await self._redis.set(f"cache:{key}", serialized, ex=ttl_seconds)
+            await redis_client.set(f"cache:{key}", serialized, ex=ttl_seconds)
         except Exception:
             logger.debug("Cache write failed for key '%s'", key, exc_info=True)
 
     async def delete(self, key: str) -> None:
         """Delete a cached value by key."""
-        if self._redis is None:
+        redis_client = self._get_redis()
+        if redis_client is None:
             return
 
         try:
-            await self._redis.delete(f"cache:{key}")
+            await redis_client.delete(f"cache:{key}")
         except Exception:
             logger.debug("Cache delete failed for key '%s'", key, exc_info=True)
 
     async def flush_pattern(self, pattern: str) -> int:
         """Delete all keys matching a pattern. Returns number of keys deleted."""
-        if self._redis is None:
+        redis_client = self._get_redis()
+        if redis_client is None:
             return 0
 
         try:
             cursor: int = 0
             deleted = 0
             while True:
-                cursor, keys = await self._redis.scan(cursor, match=f"cache:{pattern}", count=100)
+                cursor, keys = await redis_client.scan(cursor, match=f"cache:{pattern}", count=100)
                 if keys:
-                    await self._redis.delete(*keys)
+                    await redis_client.delete(*keys)
                     deleted += len(keys)
                 if cursor == 0:
                     break

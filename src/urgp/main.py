@@ -128,15 +128,22 @@ app = create_app()
 
 
 def run() -> None:
-    """Run the development server."""
+    """Run the API server using validated application settings."""
     import uvicorn
 
+    from urgp.config import get_settings
+
+    settings = get_settings()
+    reload_enabled = settings.debug and settings.environment == "development"
+
     uvicorn.run(
-        "urgp.main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info",
+        "urgp.main:create_app",
+        factory=True,
+        host=settings.host,
+        port=settings.port,
+        reload=reload_enabled,
+        workers=1 if reload_enabled else settings.workers,
+        log_level=settings.log_level.lower(),
     )
 
 

@@ -232,3 +232,20 @@ class TestIssueTrackerFactory:
             }
         )
         assert tracker is None
+
+    def test_nested_credentials_and_base_url_alias(self) -> None:
+        from urgp.integrations.issues import create_issue_tracker
+
+        tracker = create_issue_tracker(
+            {
+                "tracker": "jira",
+                "base_url": "https://jira.example.com",
+                "credentials": {
+                    "authentication_token": "test-token",
+                    "email": "admin@example.com",
+                },
+            }
+        )
+        assert tracker is not None
+        assert isinstance(tracker, JiraTracker)
+        assert tracker._email == "admin@example.com"

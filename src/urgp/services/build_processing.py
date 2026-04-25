@@ -6,6 +6,7 @@ import re
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
@@ -13,13 +14,16 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import selectinload
 
 from urgp.config import URGPSettings
+from urgp.integrations.git import create_git_provider
 from urgp.integrations.git.base import GitProvider
+from urgp.integrations.issues import create_issue_tracker
 from urgp.integrations.issues.base import IssueTracker
 from urgp.models.enums import BuildStatus
 from urgp.models.manifest import Artifact, BuildManifest
 from urgp.models.product import Product, Release
 from urgp.models.traceability import Commit, build_commits
 from urgp.schemas.ingest import IngestPayload
+from urgp.services.cache import CacheService
 from urgp.services.lifecycle import BuildLifecycleService
 from urgp.services.signature import ManifestSignatureService
 from urgp.services.traceability import TraceabilityHydrator
@@ -255,14 +259,16 @@ class BuildEventProcessor:
         signer: ManifestSignatureService,
         settings: URGPSettings,
         *,
+        cache: CacheService | None = None,
         git_provider: GitProvider | None = None,
         issue_tracker: IssueTracker | None = None,
     ) -> None:
         self._session_factory_provider = session_factory_provider
         self._signer = signer
         self._settings = settings
-        self._git_provider = git_provider
-        self._issue_tracker = issue_tracker
+        self._cache = cache
+        self._default_git_provider = git_provider
+        self._default_issue_tracker = issue_tracker
 
     async def process(self, payload: IngestPayload) -> PersistedBuildResult:
         """Persist one build payload in a single transaction."""
@@ -275,11 +281,13 @@ class BuildEventProcessor:
                     manifest = await service.get_manifest_for_processing(result.manifest_id)
                     lifecycle = BuildLifecycleService()
                     lifecycle.transition(manifest, BuildStatus.HYDRATING, allow_noop=False)
+                    git_provider = self._resolve_git_provider(manifest.product.git_config)
+                    issue_tracker = self._resolve_issue_tracker(manifest.product.issue_config)
                     hydrator = TraceabilityHydrator(
                         session,
                         self._settings,
-                        git_provider=self._git_provider,
-                        issue_tracker=self._issue_tracker,
+                        git_provider=git_provider,
+                        issue_tracker=issue_tracker,
                     )
                     hydration = await hydrator.hydrate(manifest, payload)
                     manifest.traceability_incomplete = hydration.traceability_incomplete
@@ -293,6 +301,20 @@ class BuildEventProcessor:
                         traceability_incomplete=manifest.traceability_incomplete,
                     )
             return result
+
+    def _resolve_git_provider(self, git_config: dict[str, Any] | None) -> GitProvider | None:
+        return create_git_provider(
+            git_config,
+            cache=self._cache,
+            default_provider=self._settings.default_git_provider,
+        ) or self._default_git_provider
+
+    def _resolve_issue_tracker(self, issue_config: dict[str, Any] | None) -> IssueTracker | None:
+        return create_issue_tracker(
+            issue_config,
+            cache=self._cache,
+            default_tracker=self._settings.default_issue_tracker,
+        ) or self._default_issue_tracker
 
 
 def _build_default_product_name(product_external_id: str) -> str:

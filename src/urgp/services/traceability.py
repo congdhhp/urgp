@@ -197,7 +197,7 @@ class TraceabilityHydrator:
                 self._issue_tracker.batch_get(issue_ids),
                 timeout=_HYDRATION_SLA_SECONDS / 2,
             )
-            return cast(dict[str, object], result)
+            return cast("dict[str, object]", result)
         except (IssueTrackerAPIError, TimeoutError):
             logger.warning(
                 "Issue tracker batch query failed for %d issues; using stub data",
@@ -212,7 +212,7 @@ class TraceabilityHydrator:
 
     async def _load_commit(self, payload: CommitHashSchema) -> Commit | None:
         return cast(
-            Commit | None,
+            "Commit | None",
             await self._session.scalar(
                 select(Commit).where(
                     Commit.repository == payload.repository,
