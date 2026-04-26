@@ -303,18 +303,24 @@ class BuildEventProcessor:
             return result
 
     def _resolve_git_provider(self, git_config: dict[str, Any] | None) -> GitProvider | None:
-        return create_git_provider(
-            git_config,
-            cache=self._cache,
-            default_provider=self._settings.default_git_provider,
-        ) or self._default_git_provider
+        return (
+            create_git_provider(
+                git_config,
+                cache=self._cache,
+                default_provider=self._settings.default_git_provider,
+            )
+            or self._default_git_provider
+        )
 
     def _resolve_issue_tracker(self, issue_config: dict[str, Any] | None) -> IssueTracker | None:
-        return create_issue_tracker(
-            issue_config,
-            cache=self._cache,
-            default_tracker=self._settings.default_issue_tracker,
-        ) or self._default_issue_tracker
+        return (
+            create_issue_tracker(
+                issue_config,
+                cache=self._cache,
+                default_tracker=self._settings.default_issue_tracker,
+            )
+            or self._default_issue_tracker
+        )
 
 
 def _build_default_product_name(product_external_id: str) -> str:

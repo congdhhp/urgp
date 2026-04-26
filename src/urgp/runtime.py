@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import redis.asyncio as aioredis
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
@@ -18,7 +18,10 @@ from urgp.services.publisher import EventPublisher
 
 logger = logging.getLogger(__name__)
 
-RedisType = aioredis.Redis
+if TYPE_CHECKING:
+    RedisType = aioredis.Redis[Any]
+else:
+    RedisType = aioredis.Redis
 
 
 @dataclass(slots=True)

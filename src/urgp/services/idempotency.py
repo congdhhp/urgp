@@ -17,13 +17,16 @@ import logging
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import redis.asyncio as aioredis
 
 logger = logging.getLogger(__name__)
 
-RedisType = aioredis.Redis
+if TYPE_CHECKING:
+    RedisType = aioredis.Redis[Any]
+else:
+    RedisType = aioredis.Redis
 
 _KEY_PREFIX = "idempotency"
 _STATUS_PENDING = "pending"
