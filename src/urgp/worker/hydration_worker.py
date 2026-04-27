@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from datetime import UTC, datetime
 
 from aio_pika.abc import AbstractIncomingMessage, AbstractRobustConnection
 from pydantic import ValidationError
@@ -16,10 +17,12 @@ from urgp.messaging.topology import (
     QUEUE_BUILD_PROCESS,
     setup_topology,
 )
+from urgp.models.enums import BuildStatus, NotificationEventType
 from urgp.runtime import AppResources
 from urgp.schemas.ingest import IngestPayload
+from urgp.schemas.notifications import NotificationRequest
 from urgp.services.build_processing import BuildEventProcessor
-from urgp.services.notification_processing import NotificationProcessingService
+from urgp.services.notification_processing import NotificationOrchestrator
 from urgp.services.signature import ManifestSignatureService
 
 logger = logging.getLogger(__name__)
@@ -49,27 +52,43 @@ class HydrationWorker:
                 result.created,
                 result.traceability_incomplete,
             )
+            if result.status == BuildStatus.COMPLETED:
+                publisher = self._resources.publisher
+                if publisher is None:
+                    msg = "Notification publisher is unavailable after build completion."
+                    raise RuntimeError(msg)
+                await publisher.publish_notification_request(
+                    NotificationRequest(
+                        manifest_id=result.manifest_id,
+                        build_id=payload.build_id,
+                        product_id=payload.product_id,
+                        event_type=NotificationEventType.BUILD_COMPLETED,
+                        triggered_at=datetime.now(tz=UTC),
+                        trigger_source="hydration_worker",
+                    )
+                )
 
 
 class NotificationWorker:
     """Consume build.notify and deliver user notifications."""
 
-    def __init__(self, notification_service: NotificationProcessingService) -> None:
+    def __init__(self, notification_service: NotificationOrchestrator) -> None:
         self._notification_service = notification_service
 
     async def _handle_message(self, message: AbstractIncomingMessage) -> None:
         async with message.process(requeue=False):
             try:
-                payload = IngestPayload.model_validate_json(message.body)
+                payload = NotificationRequest.model_validate_json(message.body)
             except ValidationError:
-                logger.exception("Notification worker received invalid build payload; rejecting to DLQ")
+                logger.exception("Notification worker received invalid notification request; rejecting to DLQ")
                 raise
 
-            await self._notification_service.process_build_ready(payload.build_id, payload.product_id)
+            await self._notification_service.process_request(payload)
             logger.info(
-                "Processed notifications for build [build=%s, product=%s]",
+                "Processed notifications for build [build=%s, product=%s, event=%s]",
                 payload.build_id,
                 payload.product_id,
+                payload.event_type.value,
             )
 
 
@@ -94,7 +113,7 @@ class WorkerProcess:
             await self._resources.open(
                 with_database=True,
                 with_redis=False,
-                with_publisher=False,
+                with_publisher=True,
                 ensure_rabbitmq_topology=True,
             )
 
@@ -149,7 +168,7 @@ async def start_worker() -> None:
     resources = AppResources(settings)
     signer = ManifestSignatureService(settings.signing_key)
     processor = BuildEventProcessor(resources.require_session_factory, signer, settings)
-    notification_service = NotificationProcessingService(resources.require_session_factory, settings)
+    notification_service = NotificationOrchestrator(resources.require_session_factory, settings)
     hydration_worker = HydrationWorker(resources, processor)
     notification_worker = NotificationWorker(notification_service)
     worker = WorkerProcess(resources, hydration_worker, notification_worker)

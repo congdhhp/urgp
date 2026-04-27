@@ -5,9 +5,16 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
-from urgp.models.enums import ArtifactType, BuildStatus, BuildType, NotificationChannel
+from urgp.models.enums import (
+    ArtifactType,
+    BuildStatus,
+    BuildType,
+    NotificationChannel,
+    NotificationDeliveryStatus,
+    NotificationEventType,
+)
 
 
 class ProductCreateRequest(BaseModel):
@@ -198,10 +205,24 @@ class SubscriptionCreateRequest(BaseModel):
     channel: NotificationChannel
     webhook_url: str | None = Field(default=None, max_length=1000)
 
+    @field_validator("webhook_url")
+    @classmethod
+    def validate_webhook_url(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized.startswith(("http://", "https://")):
+            msg = "webhook_url must start with http:// or https://."
+            raise ValueError(msg)
+        return normalized
+
     @model_validator(mode="after")
     def validate_channel_fields(self) -> SubscriptionCreateRequest:
         if self.channel == NotificationChannel.WEBHOOK and not self.webhook_url:
             msg = "webhook_url is required when channel is webhook."
+            raise ValueError(msg)
+        if self.channel == NotificationChannel.EMAIL and self.webhook_url is not None:
+            msg = "webhook_url is only allowed when channel is webhook."
             raise ValueError(msg)
         return self
 
@@ -220,6 +241,31 @@ class SubscriptionResponse(BaseModel):
 
 class SubscriptionListResponse(BaseModel):
     items: list[SubscriptionResponse]
+    total: int
+
+
+class NotificationHistoryItemResponse(BaseModel):
+    id: uuid.UUID
+    subscription_id: uuid.UUID
+    manifest_id: uuid.UUID
+    build_id: str
+    product_id: str
+    product_name: str
+    release: str | None = None
+    event_type: NotificationEventType
+    channel: NotificationChannel
+    recipient: str
+    status: NotificationDeliveryStatus
+    attempt_count: int
+    last_attempt_at: datetime | None = None
+    sent_at: datetime | None = None
+    last_error: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class NotificationHistoryResponse(BaseModel):
+    items: list[NotificationHistoryItemResponse]
     total: int
 
 

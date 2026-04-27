@@ -66,6 +66,7 @@ EXPECTED_ENUMS = [
     "build_status",
     "artifact_type",
     "notification_channel",
+    "notification_event_type",
     "build_type",
     "user_role",
 ]

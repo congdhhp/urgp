@@ -43,6 +43,21 @@ class NotificationChannel(str, enum.Enum):
     WEBHOOK = "webhook"
 
 
+class NotificationEventType(str, enum.Enum):
+    """Lifecycle events that trigger notification fan-out."""
+
+    BUILD_COMPLETED = "build_completed"
+    BUILD_RELEASED = "build_released"
+
+
+class NotificationDeliveryStatus(str, enum.Enum):
+    """Persisted delivery states for a notification attempt."""
+
+    PENDING = "pending"
+    SENT = "sent"
+    FAILED = "failed"
+
+
 class BuildType(str, enum.Enum):
     """Build type classification."""
 

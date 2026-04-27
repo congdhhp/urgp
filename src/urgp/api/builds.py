@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Query, status
+import logging
+
+from fastapi import APIRouter, HTTPException, Query, Request, status
 
 from urgp.dependencies import ReadAccessDep, SessionFactoryDep, WriteAccessDep
-from urgp.models.enums import BuildStatus
+from urgp.models.enums import BuildStatus, NotificationEventType
+from urgp.schemas.notifications import NotificationRequest
 from urgp.schemas.platform import (
     BuildArtifactsResponse,
     BuildComparisonResponse,
@@ -20,10 +23,12 @@ from urgp.services.lifecycle import ImmutableManifestError, InvalidBuildTransiti
 from urgp.services.platform_queries import (
     AmbiguousBuildReferenceError,
     BuildNotFoundError,
+    BuildStatusTransitionResult,
     PlatformQueryService,
 )
 
 router = APIRouter(prefix="/api/v1/builds", tags=["Builds"])
+logger = logging.getLogger(__name__)
 
 
 @router.get("", response_model=BuildListResponse, summary="List build manifests")
@@ -147,15 +152,18 @@ async def transition_build_status(
     _api_key: WriteAccessDep,
     payload: BuildStatusTransitionRequest,
     session_factory: SessionFactoryDep,
+    request: Request,
     product_id: str | None = Query(default=None),
 ) -> BuildDetailResponse:
     service = PlatformQueryService(session_factory)
     try:
-        return await service.transition_build_status(build_ref, payload, product_id=product_id)
+        result = await service.transition_build_status(build_ref, payload, product_id=product_id)
     except (BuildNotFoundError, AmbiguousBuildReferenceError) as exc:
         raise _build_lookup_http_error(exc) from exc
     except (InvalidBuildTransitionError, ImmutableManifestError) as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    await _publish_release_notification_if_needed(request, result)
+    return result.build
 
 
 @router.post("/{build_ref}/verify", response_model=BuildVerificationResponse, summary="Verify build integrity")
@@ -176,3 +184,36 @@ def _build_lookup_http_error(exc: Exception) -> HTTPException:
     if isinstance(exc, AmbiguousBuildReferenceError):
         return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
     return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+
+
+async def _publish_release_notification_if_needed(request: Request, result: BuildStatusTransitionResult) -> None:
+    if result.status != BuildStatus.RELEASED:
+        return
+
+    publisher = getattr(request.app.state, "publisher", None)
+    if publisher is None or not getattr(publisher, "is_connected", False):
+        logger.warning(
+            "Release notification request could not be published because the event publisher is unavailable "
+            "[manifest=%s, product=%s]",
+            result.manifest_id,
+            result.product_id,
+        )
+        return
+
+    try:
+        await publisher.publish_notification_request(
+            NotificationRequest(
+                manifest_id=result.manifest_id,
+                build_id=result.build.build_id,
+                product_id=result.product_id,
+                event_type=NotificationEventType.BUILD_RELEASED,
+                triggered_at=result.build.updated_at,
+                trigger_source="build_status_api",
+            )
+        )
+    except Exception:
+        logger.exception(
+            "Failed to publish release notification request [manifest=%s, product=%s]",
+            result.manifest_id,
+            result.product_id,
+        )

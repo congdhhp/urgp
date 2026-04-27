@@ -4,12 +4,21 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, HTTPException, Query, Response, status
 
-from urgp.config import get_settings
 from urgp.dependencies import ReadAccessDep, SessionFactoryDep, UserIdDep, WriteAccessDep
-from urgp.schemas.platform import SubscriptionCreateRequest, SubscriptionListResponse, SubscriptionResponse
-from urgp.services.notification_processing import NotificationProcessingService, SubscriptionNotFoundError
+from urgp.models.enums import NotificationChannel
+from urgp.schemas.platform import (
+    NotificationHistoryResponse,
+    SubscriptionCreateRequest,
+    SubscriptionListResponse,
+    SubscriptionResponse,
+)
+from urgp.services.notification_processing import (
+    NotificationHistoryService,
+    SubscriptionNotFoundError,
+    SubscriptionService,
+)
 
 router = APIRouter(prefix="/api/v1/notifications", tags=["Notifications"])
 
@@ -20,8 +29,35 @@ async def list_subscriptions(
     user_id: UserIdDep,
     session_factory: SessionFactoryDep,
 ) -> SubscriptionListResponse:
-    service = NotificationProcessingService(lambda: session_factory, get_settings())
+    service = SubscriptionService(lambda: session_factory)
     return await service.list_subscriptions(user_id)
+
+
+@router.get("/history", response_model=NotificationHistoryResponse, summary="List notification delivery history")
+async def list_notification_history(
+    _api_key: ReadAccessDep,
+    user_id: UserIdDep,
+    session_factory: SessionFactoryDep,
+    build_id: str | None = Query(default=None),
+    product_id: str | None = Query(default=None),
+    channel: NotificationChannel | None = Query(default=None),
+    status_filter: str | None = Query(default=None, alias="status"),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+) -> NotificationHistoryResponse:
+    service = NotificationHistoryService(lambda: session_factory)
+    try:
+        return await service.list_history(
+            user_id,
+            build_id=build_id,
+            product_id=product_id,
+            channel=channel,
+            status=status_filter,
+            limit=limit,
+            offset=offset,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
 
 @router.post(
@@ -36,7 +72,7 @@ async def create_subscription(
     payload: SubscriptionCreateRequest,
     session_factory: SessionFactoryDep,
 ) -> SubscriptionResponse:
-    service = NotificationProcessingService(lambda: session_factory, get_settings())
+    service = SubscriptionService(lambda: session_factory)
     try:
         return await service.create_subscription(user_id, payload)
     except ValueError as exc:
@@ -58,7 +94,7 @@ async def delete_subscription(
     user_id: UserIdDep,
     session_factory: SessionFactoryDep,
 ) -> None:
-    service = NotificationProcessingService(lambda: session_factory, get_settings())
+    service = SubscriptionService(lambda: session_factory)
     try:
         await service.delete_subscription(user_id, subscription_id)
     except SubscriptionNotFoundError as exc:

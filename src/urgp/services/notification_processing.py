@@ -1,51 +1,99 @@
-"""Notification subscriptions and delivery engine."""
+"""Notification subscriptions, history, rendering, transport, and orchestration."""
 
 from __future__ import annotations
 
 import asyncio
 import smtplib
 import uuid
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from email.message import EmailMessage
-from typing import cast
+from typing import Protocol
 
 import httpx
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import selectinload
 
 from urgp.config import URGPSettings
-from urgp.models.enums import BuildStatus, NotificationChannel
+from urgp.models.enums import (
+    BuildStatus,
+    NotificationChannel,
+    NotificationDeliveryStatus,
+    NotificationEventType,
+)
 from urgp.models.manifest import BuildManifest
 from urgp.models.notification import Notification, NotificationSubscription
 from urgp.models.product import Product, Release
-from urgp.schemas.platform import SubscriptionCreateRequest, SubscriptionListResponse, SubscriptionResponse
-from urgp.services.platform_queries import _manifest_load_options
+from urgp.models.traceability import Commit
+from urgp.schemas.notifications import NotificationRequest
+from urgp.schemas.platform import (
+    NotificationHistoryItemResponse,
+    NotificationHistoryResponse,
+    SubscriptionCreateRequest,
+    SubscriptionListResponse,
+    SubscriptionResponse,
+)
+
+_NOTIFIABLE_STATUS_BY_EVENT: dict[NotificationEventType, BuildStatus] = {
+    NotificationEventType.BUILD_COMPLETED: BuildStatus.COMPLETED,
+    NotificationEventType.BUILD_RELEASED: BuildStatus.RELEASED,
+}
 
 
 class SubscriptionNotFoundError(LookupError):
     """Raised when a subscription does not exist or is not owned by the caller."""
 
 
-class NotificationProcessingService:
-    """Manage subscriptions and deliver build notifications."""
+@dataclass(frozen=True)
+class RenderedNotification:
+    """Concrete outbound notification ready for transport."""
 
-    def __init__(
-        self,
-        session_factory_provider: Callable[[], async_sessionmaker[AsyncSession]],
-        settings: URGPSettings,
-    ) -> None:
+    channel: NotificationChannel
+    destination: str
+    subject: str
+    body: str
+    payload: dict[str, object]
+
+
+@dataclass(frozen=True)
+class DeliveryCandidate:
+    """One persisted notification record plus its rendered content."""
+
+    notification_id: uuid.UUID
+    rendered: RenderedNotification
+
+
+@dataclass(frozen=True)
+class RetryOutcome:
+    """Materialized delivery outcome after all retry attempts complete."""
+
+    status: str
+    attempt_count: int
+    last_attempt_at: datetime | None
+    sent_at: datetime | None
+    last_error: str | None
+
+
+class NotificationTransport(Protocol):
+    """Transport contract for one delivery channel."""
+
+    async def send(self, rendered: RenderedNotification) -> None:
+        """Send one rendered notification."""
+
+
+class SubscriptionService:
+    """Manage user-owned notification subscriptions."""
+
+    def __init__(self, session_factory_provider: Callable[[], async_sessionmaker[AsyncSession]]) -> None:
         self._session_factory_provider = session_factory_provider
-        self._settings = settings
 
     async def list_subscriptions(self, user_id: str) -> SubscriptionListResponse:
         session_factory = self._session_factory_provider()
         async with session_factory() as session:
             result = await session.scalars(
                 select(NotificationSubscription)
-                .join(NotificationSubscription.product)
-                .outerjoin(NotificationSubscription.release)
                 .options(
                     selectinload(NotificationSubscription.product),
                     selectinload(NotificationSubscription.release),
@@ -88,6 +136,10 @@ class NotificationProcessingService:
 
             existing = await session.scalar(
                 select(NotificationSubscription)
+                .options(
+                    selectinload(NotificationSubscription.product),
+                    selectinload(NotificationSubscription.release),
+                )
                 .where(
                     NotificationSubscription.user_id == user_id,
                     NotificationSubscription.product_id == product.id,
@@ -95,16 +147,13 @@ class NotificationProcessingService:
                     NotificationSubscription.channel == payload.channel,
                     NotificationSubscription.webhook_url == payload.webhook_url,
                 )
-                .options(
-                    selectinload(NotificationSubscription.product),
-                    selectinload(NotificationSubscription.release),
-                )
             )
             if existing is not None:
                 if not existing.active:
                     existing.active = True
                     await session.commit()
                     await session.refresh(existing)
+                    await session.refresh(existing, attribute_names=["product", "release"])
                 return self._to_subscription_response(existing)
 
             subscription = NotificationSubscription(
@@ -134,219 +183,11 @@ class NotificationProcessingService:
             if subscription is None:
                 msg = f"Subscription '{subscription_id}' was not found."
                 raise SubscriptionNotFoundError(msg)
-            await session.delete(subscription)
+            subscription.active = False
             await session.commit()
 
-    async def process_build_ready(self, build_id: str, product_external_id: str) -> None:
-        manifest = await self._wait_for_ready_manifest(build_id, product_external_id)
-        if manifest is None:
-            return
-
-        # Phase 1: Create pending notification records inside a short-lived transaction.
-        session_factory = self._session_factory_provider()
-        pending_deliveries: list[tuple[uuid.UUID, NotificationChannel, str, str, str, dict[str, object]]] = []
-        async with session_factory() as session:
-            subscriptions = await self._load_matching_subscriptions(session, manifest)
-            for subscription in subscriptions:
-                record = await self._ensure_notification_record(session, manifest, subscription)
-                if record is None:
-                    continue  # already sent
-                subject, body, payload = self._render_notification(manifest, subscription)
-                pending_deliveries.append((record.id, subscription.channel, subscription.user_id, subject, body, payload))
-            await session.commit()
-
-        # Phase 2: Deliver notifications OUTSIDE any database transaction.
-        delivery_outcomes: list[tuple[uuid.UUID, str, str | None, int]] = []
-        for notification_id, channel, user_id, subject, body, payload in pending_deliveries:
-            last_error: str | None = None
-            delivered = False
-            attempts = 0
-            for attempt in range(1, self._settings.notification_max_retries + 1):
-                attempts = attempt
-                try:
-                    if channel == NotificationChannel.EMAIL:
-                        await self._send_email(user_id, subject, body)
-                    else:
-                        webhook_url = payload.get("_webhook_url")
-                        if isinstance(webhook_url, str):
-                            await self._send_webhook(webhook_url, payload)
-                        else:
-                            msg = "Webhook subscription is missing webhook_url."
-                            raise ValueError(msg)
-                    delivered = True
-                    break
-                except Exception as exc:
-                    last_error = str(exc)
-                    if attempt < self._settings.notification_max_retries:
-                        delay = self._settings.notification_retry_backoff_seconds * (2 ** (attempt - 1))
-                        await asyncio.sleep(delay)
-
-            if delivered:
-                delivery_outcomes.append((notification_id, "sent", None, attempts - 1))
-            else:
-                delivery_outcomes.append((notification_id, "failed", last_error, attempts))
-
-        # Phase 3: Update notification records with delivery outcomes in a new transaction.
-        async with session_factory() as session:
-            for notification_id, status_value, error_message, retry_count in delivery_outcomes:
-                record = await session.get(Notification, notification_id)
-                if record is None:
-                    continue
-                record.status = status_value
-                record.error_message = error_message
-                record.retry_count = retry_count
-                if status_value == "sent":
-                    record.sent_at = datetime.now(tz=UTC)
-            await session.commit()
-
-    async def _wait_for_ready_manifest(self, build_id: str, product_external_id: str) -> BuildManifest | None:
-        deadline = asyncio.get_running_loop().time() + self._settings.notification_wait_timeout_seconds
-        while asyncio.get_running_loop().time() < deadline:
-            session_factory = self._session_factory_provider()
-            async with session_factory() as session:
-                manifest = await session.scalar(
-                    select(BuildManifest)
-                    .join(BuildManifest.product)
-                    .where(
-                        BuildManifest.build_id == build_id,
-                        Product.external_id == product_external_id,
-                    )
-                    .options(*_manifest_load_options())
-                )
-                if manifest is not None and manifest.status in {
-                    BuildStatus.COMPLETED,
-                    BuildStatus.TESTING,
-                    BuildStatus.RELEASED,
-                    BuildStatus.DEPRECATED,
-                }:
-                    return manifest
-            await asyncio.sleep(self._settings.notification_poll_interval_seconds)
-        msg = (
-            f"Build '{build_id}' for product '{product_external_id}' did not reach a "
-            "notification-ready state within the timeout window."
-        )
-        raise RuntimeError(msg)
-
-    async def _load_matching_subscriptions(
-        self,
-        session: AsyncSession,
-        manifest: BuildManifest,
-    ) -> list[NotificationSubscription]:
-        result = await session.scalars(
-            select(NotificationSubscription)
-            .join(NotificationSubscription.product)
-            .outerjoin(NotificationSubscription.release)
-            .options(
-                selectinload(NotificationSubscription.product),
-                selectinload(NotificationSubscription.release),
-            )
-            .where(
-                NotificationSubscription.active.is_(True),
-                NotificationSubscription.product_id == manifest.product_id,
-                or_(
-                    NotificationSubscription.release_id.is_(None),
-                    NotificationSubscription.release_id == manifest.release_id,
-                ),
-            )
-        )
-        return list(result.all())
-
-    async def _ensure_notification_record(
-        self,
-        session: AsyncSession,
-        manifest: BuildManifest,
-        subscription: NotificationSubscription,
-    ) -> Notification | None:
-        """Create or retrieve a pending notification record. Returns None if already sent."""
-        recipient = subscription.webhook_url or subscription.user_id
-        existing = await session.scalar(
-            select(Notification).where(
-                Notification.manifest_id == manifest.id,
-                Notification.channel == subscription.channel,
-                Notification.recipient == recipient,
-            )
-        )
-        if existing is not None and existing.status == "sent":
-            return None
-
-        if existing is not None:
-            return existing
-
-        record = Notification(
-            manifest_id=manifest.id,
-            channel=subscription.channel,
-            recipient=recipient,
-            status="pending",
-            retry_count=0,
-        )
-        session.add(record)
-        await session.flush()
-        return record
-
-    def _render_notification(
-        self,
-        manifest: BuildManifest,
-        subscription: NotificationSubscription,
-    ) -> tuple[str, str, dict[str, object]]:
-        pull_request_count = len({pull_request.id for commit in manifest.commits for pull_request in commit.pull_requests})
-        issue_count = len({issue.id for commit in manifest.commits for issue in commit.issues})
-        release_value = manifest.release.version if manifest.release is not None else "unassigned"
-        portal_link = (
-            f"{self._settings.portal_base_url.rstrip('/')}/?build={manifest.build_id}&product={manifest.product.external_id}"
-        )
-
-        payload = cast(
-            dict[str, object],
-            {
-            "build_id": manifest.build_id,
-            "product": manifest.product.name,
-            "product_id": manifest.product.external_id,
-            "release": release_value,
-            "build_type": manifest.build_type.value,
-            "status": manifest.status.value,
-            "changes_summary": {
-                "commits": len(manifest.commits),
-                "pull_requests": pull_request_count,
-                "issues": issue_count,
-            },
-            "portal_url": portal_link,
-            "subscription_channel": subscription.channel.value,
-            "timestamp": manifest.created_at.isoformat(),
-            "_webhook_url": subscription.webhook_url,
-            },
-        )
-
-        subject = f"[URGP] {manifest.product.name} - {manifest.build_type.value} build {manifest.build_id} ready"
-        body = (
-            f"Build {manifest.build_id} for {manifest.product.name} is now {manifest.status.value}.\n\n"
-            f"Release: {release_value}\n"
-            f"Changes: {len(manifest.commits)} commits, {pull_request_count} pull requests, {issue_count} issues\n"
-            f"Traceability incomplete: {'yes' if manifest.traceability_incomplete else 'no'}\n"
-            f"Portal: {portal_link}\n"
-        )
-        return subject, body, payload
-
-    async def _send_email(self, recipient: str, subject: str, body: str) -> None:
-        await asyncio.to_thread(self._send_email_sync, recipient, subject, body)
-
-    def _send_email_sync(self, recipient: str, subject: str, body: str) -> None:
-        message = EmailMessage()
-        message["From"] = self._settings.smtp_from
-        message["To"] = recipient
-        message["Subject"] = subject
-        message.set_content(body)
-
-        with smtplib.SMTP(self._settings.smtp_host, self._settings.smtp_port, timeout=10) as smtp:
-            if self._settings.smtp_username:
-                smtp.login(self._settings.smtp_username, self._settings.smtp_password)
-            smtp.send_message(message)
-
-    async def _send_webhook(self, webhook_url: str, payload: dict[str, object]) -> None:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.post(webhook_url, json=payload)
-            response.raise_for_status()
-
-    def _to_subscription_response(self, subscription: NotificationSubscription) -> SubscriptionResponse:
+    @staticmethod
+    def _to_subscription_response(subscription: NotificationSubscription) -> SubscriptionResponse:
         return SubscriptionResponse(
             id=subscription.id,
             user_id=subscription.user_id,
@@ -360,7 +201,403 @@ class NotificationProcessingService:
         )
 
 
+class NotificationHistoryService:
+    """Read delivery history for the caller's own subscriptions."""
+
+    def __init__(self, session_factory_provider: Callable[[], async_sessionmaker[AsyncSession]]) -> None:
+        self._session_factory_provider = session_factory_provider
+
+    async def list_history(
+        self,
+        user_id: str,
+        *,
+        build_id: str | None = None,
+        product_id: str | None = None,
+        channel: NotificationChannel | None = None,
+        status: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> NotificationHistoryResponse:
+        normalized_status: str | None = None
+        if status is not None:
+            normalized_status = NotificationDeliveryStatus(status).value
+
+        session_factory = self._session_factory_provider()
+        async with session_factory() as session:
+            statement = (
+                select(Notification)
+                .join(Notification.subscription)
+                .join(Notification.manifest)
+                .join(BuildManifest.product)
+                .outerjoin(BuildManifest.release)
+                .where(NotificationSubscription.user_id == user_id)
+            )
+            if build_id is not None:
+                statement = statement.where(BuildManifest.build_id == build_id)
+            if product_id is not None:
+                statement = statement.where(Product.external_id == product_id)
+            if channel is not None:
+                statement = statement.where(Notification.channel == channel)
+            if normalized_status is not None:
+                statement = statement.where(Notification.status == normalized_status)
+
+            query_statement = statement.options(
+                selectinload(Notification.subscription),
+                selectinload(Notification.manifest).selectinload(BuildManifest.product),
+                selectinload(Notification.manifest).selectinload(BuildManifest.release),
+            ).order_by(Notification.created_at.desc())
+            total = await session.scalar(select(func.count()).select_from(statement.subquery()))
+            result = await session.scalars(query_statement.offset(offset).limit(limit))
+            records = list(result.all())
+
+        items = [self._to_history_item(record) for record in records]
+        return NotificationHistoryResponse(items=items, total=int(total or 0))
+
+    @staticmethod
+    def _to_history_item(record: Notification) -> NotificationHistoryItemResponse:
+        manifest = record.manifest
+        release = manifest.release
+        return NotificationHistoryItemResponse(
+            id=record.id,
+            subscription_id=record.subscription_id,
+            manifest_id=manifest.id,
+            build_id=manifest.build_id,
+            product_id=manifest.product.external_id,
+            product_name=manifest.product.name,
+            release=release.version if release is not None else None,
+            event_type=record.event_type,
+            channel=record.channel,
+            recipient=record.recipient_snapshot,
+            status=NotificationDeliveryStatus(record.status),
+            attempt_count=record.attempt_count,
+            last_attempt_at=record.last_attempt_at,
+            sent_at=record.sent_at,
+            last_error=record.last_error,
+            created_at=record.created_at,
+            updated_at=record.updated_at,
+        )
+
+
+class NotificationRenderer:
+    """Render default email and webhook content for one notification event."""
+
+    def __init__(self, settings: URGPSettings) -> None:
+        self._portal_base_url = settings.portal_base_url.rstrip("/")
+
+    def render(
+        self,
+        manifest: BuildManifest,
+        subscription: NotificationSubscription,
+        request: NotificationRequest,
+    ) -> RenderedNotification:
+        pull_request_count = len({pull_request.id for commit in manifest.commits for pull_request in commit.pull_requests})
+        issue_count = len({issue.id for commit in manifest.commits for issue in commit.issues})
+        release_value = manifest.release.version if manifest.release is not None else "unassigned"
+        portal_url = f"{self._portal_base_url}/?build={manifest.build_id}&product={manifest.product.external_id}"
+        event_label = "Completed" if request.event_type == NotificationEventType.BUILD_COMPLETED else "Released"
+
+        payload = {
+            "schema_version": "v1",
+            "event_type": request.event_type.value,
+            "triggered_at": request.triggered_at.isoformat(),
+            "build": {
+                "id": manifest.build_id,
+                "status": manifest.status.value,
+                "type": manifest.build_type.value,
+                "product_id": manifest.product.external_id,
+                "product_name": manifest.product.name,
+                "release_train": release_value,
+            },
+            "changes_summary": {
+                "commits": len(manifest.commits),
+                "pull_requests": pull_request_count,
+                "issues": issue_count,
+            },
+            "traceability": {
+                "incomplete": manifest.traceability_incomplete,
+            },
+            "links": {
+                "portal": portal_url,
+            },
+        }
+        destination = subscription.webhook_url or subscription.user_id
+        subject = f"[URGP] {manifest.product.name} - {event_label} build {manifest.build_id}"
+        body = (
+            f"{manifest.product.name} build {manifest.build_id} is now {manifest.status.value}.\n\n"
+            f"Release train: {release_value}\n"
+            f"Build type: {manifest.build_type.value}\n"
+            f"Changes: {len(manifest.commits)} commits, {pull_request_count} pull requests, {issue_count} issues\n"
+            f"Traceability incomplete: {'yes' if manifest.traceability_incomplete else 'no'}\n"
+            f"Portal: {portal_url}\n"
+        )
+        return RenderedNotification(
+            channel=subscription.channel,
+            destination=destination,
+            subject=subject,
+            body=body,
+            payload=payload,
+        )
+
+
+class EmailTransport:
+    """Send email notifications via SMTP."""
+
+    def __init__(self, settings: URGPSettings) -> None:
+        self._settings = settings
+
+    async def send(self, rendered: RenderedNotification) -> None:
+        if rendered.channel != NotificationChannel.EMAIL:
+            msg = f"EmailTransport cannot send channel '{rendered.channel.value}'."
+            raise ValueError(msg)
+        await asyncio.to_thread(self._send_sync, rendered)
+
+    def _send_sync(self, rendered: RenderedNotification) -> None:
+        message = EmailMessage()
+        message["From"] = self._settings.smtp_from
+        message["To"] = rendered.destination
+        message["Subject"] = rendered.subject
+        message.set_content(rendered.body)
+
+        with smtplib.SMTP(self._settings.smtp_host, self._settings.smtp_port, timeout=10) as smtp:
+            if self._settings.smtp_username:
+                smtp.login(self._settings.smtp_username, self._settings.smtp_password)
+            smtp.send_message(message)
+
+
+class WebhookTransport:
+    """Send webhook notifications over HTTP POST."""
+
+    async def send(self, rendered: RenderedNotification) -> None:
+        if rendered.channel != NotificationChannel.WEBHOOK:
+            msg = f"WebhookTransport cannot send channel '{rendered.channel.value}'."
+            raise ValueError(msg)
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(rendered.destination, json=rendered.payload)
+            response.raise_for_status()
+
+
+class RetryPolicy:
+    """Retry one delivery using exponential backoff."""
+
+    def __init__(self, *, max_retries: int, base_backoff_seconds: float) -> None:
+        self._max_retries = max_retries
+        self._base_backoff_seconds = base_backoff_seconds
+
+    async def execute(self, operation: Callable[[], Awaitable[None]]) -> RetryOutcome:
+        total_attempts = self._max_retries + 1
+        last_attempt_at: datetime | None = None
+        last_error: str | None = None
+
+        for attempt in range(1, total_attempts + 1):
+            last_attempt_at = datetime.now(tz=UTC)
+            try:
+                await operation()
+            except Exception as exc:
+                last_error = str(exc)
+                if attempt < total_attempts:
+                    delay = self._base_backoff_seconds * (2 ** (attempt - 1))
+                    await asyncio.sleep(delay)
+                    continue
+                return RetryOutcome(
+                    status=NotificationDeliveryStatus.FAILED.value,
+                    attempt_count=attempt,
+                    last_attempt_at=last_attempt_at,
+                    sent_at=None,
+                    last_error=last_error,
+                )
+
+            return RetryOutcome(
+                status=NotificationDeliveryStatus.SENT.value,
+                attempt_count=attempt,
+                last_attempt_at=last_attempt_at,
+                sent_at=datetime.now(tz=UTC),
+                last_error=None,
+            )
+
+        msg = "RetryPolicy exhausted without producing an outcome."
+        raise RuntimeError(msg)
+
+
+class NotificationOrchestrator:
+    """Resolve subscriptions, persist delivery history, and dispatch notifications."""
+
+    def __init__(
+        self,
+        session_factory_provider: Callable[[], async_sessionmaker[AsyncSession]],
+        settings: URGPSettings,
+        *,
+        renderer: NotificationRenderer | None = None,
+        retry_policy: RetryPolicy | None = None,
+        transports: dict[NotificationChannel, NotificationTransport] | None = None,
+    ) -> None:
+        self._session_factory_provider = session_factory_provider
+        self._renderer = renderer or NotificationRenderer(settings)
+        self._retry_policy = retry_policy or RetryPolicy(
+            max_retries=settings.notification_max_retries,
+            base_backoff_seconds=settings.notification_retry_backoff_seconds,
+        )
+        self._transports = transports or {
+            NotificationChannel.EMAIL: EmailTransport(settings),
+            NotificationChannel.WEBHOOK: WebhookTransport(),
+        }
+
+    async def process_request(self, request: NotificationRequest) -> None:
+        manifest = await self._load_manifest(request.manifest_id)
+        self._validate_request_against_manifest(request, manifest)
+
+        session_factory = self._session_factory_provider()
+        pending_deliveries: list[DeliveryCandidate] = []
+        async with session_factory() as session:
+            subscriptions = await self._load_matching_subscriptions(session, manifest)
+            for subscription in subscriptions:
+                candidate = await self._prepare_delivery(session, manifest, subscription, request)
+                if candidate is not None:
+                    pending_deliveries.append(candidate)
+            await session.commit()
+
+        outcomes: list[tuple[uuid.UUID, RetryOutcome]] = []
+        for candidate in pending_deliveries:
+            transport = self._transports.get(candidate.rendered.channel)
+            if transport is None:
+                msg = f"No transport is registered for channel '{candidate.rendered.channel.value}'."
+                raise RuntimeError(msg)
+            outcome = await self._retry_policy.execute(lambda: transport.send(candidate.rendered))
+            outcomes.append((candidate.notification_id, outcome))
+
+        async with session_factory() as session:
+            for notification_id, outcome in outcomes:
+                record = await session.get(Notification, notification_id)
+                if record is None:
+                    continue
+                record.status = outcome.status
+                record.attempt_count = outcome.attempt_count
+                record.last_attempt_at = outcome.last_attempt_at
+                record.sent_at = outcome.sent_at
+                record.last_error = outcome.last_error
+            await session.commit()
+
+    async def _load_manifest(self, manifest_id: uuid.UUID) -> BuildManifest:
+        session_factory = self._session_factory_provider()
+        async with session_factory() as session:
+            manifest = await session.scalar(
+                select(BuildManifest)
+                .options(*_manifest_load_options())
+                .where(BuildManifest.id == manifest_id)
+            )
+            if manifest is None:
+                msg = f"Manifest '{manifest_id}' could not be loaded for notification processing."
+                raise RuntimeError(msg)
+            return manifest
+
+    @staticmethod
+    def _validate_request_against_manifest(request: NotificationRequest, manifest: BuildManifest) -> None:
+        if manifest.build_id != request.build_id:
+            msg = f"Notification request build '{request.build_id}' does not match manifest '{manifest.build_id}'."
+            raise RuntimeError(msg)
+        if manifest.product.external_id != request.product_id:
+            msg = (
+                f"Notification request product '{request.product_id}' does not match "
+                f"manifest '{manifest.product.external_id}'."
+            )
+            raise RuntimeError(msg)
+
+        expected_status = _NOTIFIABLE_STATUS_BY_EVENT[request.event_type]
+        if manifest.status != expected_status:
+            msg = (
+                f"Manifest '{manifest.build_id}' is in status '{manifest.status.value}', "
+                f"expected '{expected_status.value}' for event '{request.event_type.value}'."
+            )
+            raise RuntimeError(msg)
+
+    @staticmethod
+    async def _load_matching_subscriptions(
+        session: AsyncSession,
+        manifest: BuildManifest,
+    ) -> list[NotificationSubscription]:
+        result = await session.scalars(
+            select(NotificationSubscription)
+            .options(
+                selectinload(NotificationSubscription.product),
+                selectinload(NotificationSubscription.release),
+            )
+            .where(
+                NotificationSubscription.active.is_(True),
+                NotificationSubscription.product_id == manifest.product_id,
+                or_(
+                    NotificationSubscription.release_id.is_(None),
+                    NotificationSubscription.release_id == manifest.release_id,
+                ),
+            )
+            .order_by(NotificationSubscription.created_at.asc())
+        )
+        return list(result.all())
+
+    async def _prepare_delivery(
+        self,
+        session: AsyncSession,
+        manifest: BuildManifest,
+        subscription: NotificationSubscription,
+        request: NotificationRequest,
+    ) -> DeliveryCandidate | None:
+        rendered = self._renderer.render(manifest, subscription, request)
+        existing = await session.scalar(
+            select(Notification).where(
+                Notification.manifest_id == manifest.id,
+                Notification.subscription_id == subscription.id,
+                Notification.event_type == request.event_type,
+            )
+        )
+        if existing is not None and existing.status == NotificationDeliveryStatus.SENT.value:
+            return None
+
+        if existing is None:
+            record = Notification(
+                manifest_id=manifest.id,
+                subscription_id=subscription.id,
+                event_type=request.event_type,
+                channel=subscription.channel,
+                recipient_snapshot=rendered.destination,
+                status=NotificationDeliveryStatus.PENDING.value,
+                attempt_count=0,
+            )
+            session.add(record)
+            await session.flush()
+        else:
+            existing.channel = subscription.channel
+            existing.recipient_snapshot = rendered.destination
+            existing.status = NotificationDeliveryStatus.PENDING.value
+            existing.attempt_count = 0
+            existing.last_attempt_at = None
+            existing.sent_at = None
+            existing.last_error = None
+            await session.flush()
+            record = existing
+
+        return DeliveryCandidate(notification_id=record.id, rendered=rendered)
+
+
+def _manifest_load_options() -> tuple[object, ...]:
+    return (
+        selectinload(BuildManifest.product),
+        selectinload(BuildManifest.release),
+        selectinload(BuildManifest.artifacts),
+        selectinload(BuildManifest.notifications).selectinload(Notification.subscription),
+        selectinload(BuildManifest.commits).selectinload(Commit.pull_requests),
+        selectinload(BuildManifest.commits).selectinload(Commit.issues),
+    )
+
+
 __all__ = [
-    "NotificationProcessingService",
+    "DeliveryCandidate",
+    "EmailTransport",
+    "NotificationHistoryService",
+    "NotificationOrchestrator",
+    "NotificationRenderer",
+    "NotificationTransport",
+    "RenderedNotification",
+    "RetryOutcome",
+    "RetryPolicy",
     "SubscriptionNotFoundError",
+    "SubscriptionService",
+    "WebhookTransport",
 ]

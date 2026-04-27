@@ -4,7 +4,15 @@ Import all models here so Alembic can auto-detect them.
 """
 
 from urgp.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
-from urgp.models.enums import ArtifactType, BuildStatus, BuildType, NotificationChannel, UserRole
+from urgp.models.enums import (
+    ArtifactType,
+    BuildStatus,
+    BuildType,
+    NotificationChannel,
+    NotificationDeliveryStatus,
+    NotificationEventType,
+    UserRole,
+)
 from urgp.models.manifest import Artifact, BuildManifest
 from urgp.models.notification import Notification, NotificationSubscription
 from urgp.models.product import Product, Release
@@ -27,6 +35,8 @@ __all__ = [
     "BuildStatus",
     "BuildType",
     "NotificationChannel",
+    "NotificationEventType",
+    "NotificationDeliveryStatus",
     "UserRole",
     # Product
     "Product",
