@@ -8,7 +8,7 @@ from __future__ import annotations
 import enum
 
 
-class BuildStatus(str, enum.Enum):
+class BuildStatus(enum.StrEnum):
     """Build lifecycle status.
 
     State machine transitions:
@@ -24,7 +24,7 @@ class BuildStatus(str, enum.Enum):
     DEPRECATED = "deprecated"
 
 
-class ArtifactType(str, enum.Enum):
+class ArtifactType(enum.StrEnum):
     """Supported artifact types."""
 
     ECLIPSE_P2 = "eclipse_p2"
@@ -36,21 +36,21 @@ class ArtifactType(str, enum.Enum):
     GENERIC = "generic"
 
 
-class NotificationChannel(str, enum.Enum):
+class NotificationChannel(enum.StrEnum):
     """Notification delivery channels."""
 
     EMAIL = "email"
     WEBHOOK = "webhook"
 
 
-class NotificationEventType(str, enum.Enum):
+class NotificationEventType(enum.StrEnum):
     """Lifecycle events that trigger notification fan-out."""
 
     BUILD_COMPLETED = "build_completed"
     BUILD_RELEASED = "build_released"
 
 
-class NotificationDeliveryStatus(str, enum.Enum):
+class NotificationDeliveryStatus(enum.StrEnum):
     """Persisted delivery states for a notification attempt."""
 
     PENDING = "pending"
@@ -58,7 +58,7 @@ class NotificationDeliveryStatus(str, enum.Enum):
     FAILED = "failed"
 
 
-class BuildType(str, enum.Enum):
+class BuildType(enum.StrEnum):
     """Build type classification."""
 
     NIGHTLY = "nightly"
@@ -67,7 +67,7 @@ class BuildType(str, enum.Enum):
     HOTFIX = "hotfix"
 
 
-class UserRole(str, enum.Enum):
+class UserRole(enum.StrEnum):
     """User roles for RBAC (Phase 2, defined here for schema completeness)."""
 
     PLATFORM_ADMIN = "platform_admin"

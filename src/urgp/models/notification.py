@@ -119,7 +119,9 @@ class Notification(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     # Relationships
     manifest: Mapped[BuildManifest] = relationship("BuildManifest", back_populates="notifications")
-    subscription: Mapped[NotificationSubscription] = relationship("NotificationSubscription", back_populates="notifications")
+    subscription: Mapped[NotificationSubscription] = relationship(
+        "NotificationSubscription", back_populates="notifications"
+    )
 
     def __repr__(self) -> str:
         return (

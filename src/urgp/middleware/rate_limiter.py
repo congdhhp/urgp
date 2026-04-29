@@ -13,16 +13,12 @@ import logging
 import time
 import uuid
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
 
 import redis.asyncio as aioredis
 
 logger = logging.getLogger(__name__)
 
-if TYPE_CHECKING:
-    RedisType = aioredis.Redis[Any]
-else:
-    RedisType = aioredis.Redis
+RedisType = aioredis.Redis
 
 _KEY_PREFIX = "ratelimit"
 _WINDOW_SECONDS = 60
@@ -98,14 +94,14 @@ class RateLimiter:
         reset_at = int(now) + _WINDOW_SECONDS
         member = f"{now}:{uuid.uuid4().hex}"
 
-        raw_result = await self._redis.eval(  # type: ignore[no-untyped-call]
+        raw_result = await self._redis.eval(  # type: ignore[misc]
             _SLIDING_WINDOW_SCRIPT,
             1,
             key,
-            now,
-            window_start,
-            limit,
-            _WINDOW_SECONDS + 1,
+            str(now),
+            str(window_start),
+            str(limit),
+            str(_WINDOW_SECONDS + 1),
             member,
         )
 

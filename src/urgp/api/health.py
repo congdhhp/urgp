@@ -89,7 +89,7 @@ async def readiness_check(request: Request, response: Response) -> dict[str, Any
         if shared_redis is not None:
             await shared_redis.ping()
         else:
-            redis_client = aioredis.from_url(str(settings.redis_url), socket_timeout=5)
+            redis_client = aioredis.from_url(str(settings.redis_url), socket_timeout=5)  # type: ignore[no-untyped-call]
             await redis_client.ping()
             aclose = getattr(redis_client, "aclose", None)
             if callable(aclose):

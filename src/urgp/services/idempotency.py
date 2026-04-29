@@ -17,16 +17,13 @@ import logging
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any, Literal
+from typing import Literal
 
 import redis.asyncio as aioredis
 
 logger = logging.getLogger(__name__)
 
-if TYPE_CHECKING:
-    RedisType = aioredis.Redis[Any]
-else:
-    RedisType = aioredis.Redis
+RedisType = aioredis.Redis
 
 _KEY_PREFIX = "idempotency"
 _STATUS_PENDING = "pending"
@@ -261,20 +258,20 @@ class IdempotencyService:
         key = _make_key(product_id, build_id)
         completed_record = _serialize_completed_record(ingestion_timestamp)
 
-        result = await self._redis.eval(  # type: ignore[no-untyped-call]
+        result = await self._redis.eval(  # type: ignore[misc]
             _COMPLETE_RESERVATION_SCRIPT,
             1,
             key,
             reservation_token,
             completed_record,
-            self._completed_ttl_seconds,
+            str(self._completed_ttl_seconds),
         )
         return bool(int(result))
 
     async def release_reservation(self, build_id: str, product_id: str, reservation_token: str) -> bool:
         """Release a pending reservation after a failed publish attempt."""
         key = _make_key(product_id, build_id)
-        result = await self._redis.eval(  # type: ignore[no-untyped-call]
+        result = await self._redis.eval(  # type: ignore[misc]
             _RELEASE_RESERVATION_SCRIPT,
             1,
             key,

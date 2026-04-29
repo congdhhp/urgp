@@ -144,9 +144,7 @@ class BuildPersistenceService:
         if created_id is not None:
             return created_id
 
-        existing_id = await self._session.scalar(
-            select(Product.id).where(Product.external_id == product_external_id)
-        )
+        existing_id = await self._session.scalar(select(Product.id).where(Product.external_id == product_external_id))
         if existing_id is None:
             msg = f"Product '{product_external_id}' could not be resolved."
             raise RuntimeError(msg)

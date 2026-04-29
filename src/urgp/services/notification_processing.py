@@ -5,11 +5,11 @@ from __future__ import annotations
 import asyncio
 import smtplib
 import uuid
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from email.message import EmailMessage
-from typing import Protocol
+from typing import Any, Protocol
 
 import httpx
 from sqlalchemy import func, or_, select
@@ -54,7 +54,7 @@ class RenderedNotification:
     destination: str
     subject: str
     body: str
-    payload: dict[str, object]
+    payload: Mapping[str, object]
 
 
 @dataclass(frozen=True)
@@ -470,7 +470,18 @@ class NotificationOrchestrator:
             if transport is None:
                 msg = f"No transport is registered for channel '{candidate.rendered.channel.value}'."
                 raise RuntimeError(msg)
-            outcome = await self._retry_policy.execute(lambda: transport.send(candidate.rendered))
+
+            # Bind loop vars to local names for the closure.
+            bound_transport: NotificationTransport = transport
+            bound_rendered: RenderedNotification = candidate.rendered
+
+            async def _send(
+                _t: NotificationTransport = bound_transport,
+                _r: RenderedNotification = bound_rendered,
+            ) -> None:
+                await _t.send(_r)
+
+            outcome = await self._retry_policy.execute(_send)
             outcomes.append((candidate.notification_id, outcome))
 
         async with session_factory() as session:
@@ -583,7 +594,7 @@ class NotificationOrchestrator:
         return DeliveryCandidate(notification_id=record.id, rendered=rendered)
 
 
-def _manifest_load_options() -> tuple[object, ...]:
+def _manifest_load_options() -> tuple[Any, ...]:
     return (
         selectinload(BuildManifest.product),
         selectinload(BuildManifest.release),

@@ -182,7 +182,7 @@ class EventPublisher:
             type=message_type,
             message_id=str(uuid.uuid4()),
             timestamp=timestamp,
-            headers=cast(dict[str, Any], headers),
+            headers=cast("dict[str, Any]", headers),
         )
 
     @property

@@ -48,9 +48,7 @@ class TraceabilityHydrator:
             if commit_payload.pull_request is not None:
                 pr = await self._ensure_pull_request(commit_payload)
                 await self._session.execute(
-                    insert(commit_prs)
-                    .values(commit_id=commit.id, pr_id=pr.id)
-                    .on_conflict_do_nothing()
+                    insert(commit_prs).values(commit_id=commit.id, pr_id=pr.id).on_conflict_do_nothing()
                 )
                 pull_request_ids.add((pr.repository, pr.external_id))
                 attached_pull_request = True
@@ -60,9 +58,7 @@ class TraceabilityHydrator:
                 for issue_external_id in extracted_issue_ids:
                     issue = await self._ensure_issue(manifest, issue_external_id)
                     await self._session.execute(
-                        insert(commit_issues)
-                        .values(commit_id=commit.id, issue_id=issue.id)
-                        .on_conflict_do_nothing()
+                        insert(commit_issues).values(commit_id=commit.id, issue_id=issue.id).on_conflict_do_nothing()
                     )
                     issue_ids.add((issue.tracker_type, issue.external_id))
             elif not attached_pull_request:
@@ -77,7 +73,7 @@ class TraceabilityHydrator:
 
     async def _load_commit(self, payload: CommitHashSchema) -> Commit | None:
         return cast(
-            Commit | None,
+            "Commit | None",
             await self._session.scalar(
                 select(Commit).where(
                     Commit.repository == payload.repository,
@@ -155,11 +151,7 @@ class TraceabilityHydrator:
     def _extract_issue_ids(self, payload: CommitHashSchema, issue_pattern: re.Pattern[str]) -> set[str]:
         explicit_issue_ids = set(payload.issue_ids or [])
         searchable_fields = [value for value in (payload.message, payload.branch) if value]
-        inferred_issue_ids = {
-            match.group(0)
-            for field in searchable_fields
-            for match in issue_pattern.finditer(field)
-        }
+        inferred_issue_ids = {match.group(0) for field in searchable_fields for match in issue_pattern.finditer(field)}
         return explicit_issue_ids | inferred_issue_ids
 
     def _resolve_issue_pattern(self, manifest: BuildManifest) -> re.Pattern[str]:

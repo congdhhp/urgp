@@ -64,7 +64,9 @@ class BuildLifecycleService:
 
         allowed_targets = _ALLOWED_TRANSITIONS[current_status]
         if target_status not in allowed_targets:
-            allowed = ", ".join(status.value for status in sorted(allowed_targets, key=lambda item: item.value)) or "none"
+            allowed = (
+                ", ".join(status.value for status in sorted(allowed_targets, key=lambda item: item.value)) or "none"
+            )
             msg = (
                 f"Invalid build lifecycle transition '{current_status.value}' -> '{target_status.value}'. "
                 f"Allowed targets: {allowed}."

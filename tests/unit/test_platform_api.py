@@ -313,9 +313,7 @@ class TestActivityAndNotificationsApi:
     def test_delete_subscription_returns_404_when_missing(self, platform_client: TestClient) -> None:
 
         with patch("urgp.api.notifications.SubscriptionService") as service_cls:
-            service_cls.return_value.delete_subscription = AsyncMock(
-                side_effect=SubscriptionNotFoundError("missing")
-            )
+            service_cls.return_value.delete_subscription = AsyncMock(side_effect=SubscriptionNotFoundError("missing"))
             response = platform_client.delete(
                 f"/api/v1/notifications/subscriptions/{uuid.uuid4()}",
                 headers={"X-API-Key": _TEST_API_KEY, "X-User-Id": "qa@example.com"},

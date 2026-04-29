@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
 import uuid
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
@@ -50,6 +50,7 @@ def _build_mock_connection(mock_channel: AsyncMock) -> AsyncMock:
     connection.is_closed = False
     connection.channel = _mock_channel_ctx
     return connection
+
 
 class TestEventPublisher:
     """P1-3.T5: RabbitMQ message publishing tests."""

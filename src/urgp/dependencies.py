@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Annotated, Any, cast
+from typing import Annotated, cast
 
 import redis.asyncio as aioredis
 from fastapi import Depends, HTTPException, Request, status
@@ -15,10 +15,7 @@ from urgp.schemas.responses import RateLimitExceededResponse
 from urgp.services.idempotency import IdempotencyService
 from urgp.services.publisher import EventPublisher
 
-if TYPE_CHECKING:
-    RedisType = aioredis.Redis[Any]
-else:
-    RedisType = aioredis.Redis
+RedisType = aioredis.Redis
 
 
 def _service_unavailable(message: str, *, error: str = "service_unavailable") -> HTTPException:
@@ -49,7 +46,7 @@ async def get_redis(request: Request) -> RedisType:
         raise _service_unavailable(
             "Redis is unavailable. Rate limiting and idempotency checks cannot be performed.",
         )
-    return cast(RedisType, redis_client)
+    return cast("RedisType", redis_client)
 
 
 async def get_publisher(request: Request) -> EventPublisher:
@@ -59,7 +56,7 @@ async def get_publisher(request: Request) -> EventPublisher:
             "RabbitMQ publisher is unavailable. Event ingestion is temporarily disabled.",
             error="broker_unavailable",
         )
-    return cast(EventPublisher, publisher)
+    return cast("EventPublisher", publisher)
 
 
 async def get_session_factory(request: Request) -> async_sessionmaker[AsyncSession]:
@@ -69,7 +66,7 @@ async def get_session_factory(request: Request) -> async_sessionmaker[AsyncSessi
             "Database session factory is unavailable. Platform queries are temporarily disabled.",
             error="database_unavailable",
         )
-    return cast(async_sessionmaker[AsyncSession], session_factory)
+    return cast("async_sessionmaker[AsyncSession]", session_factory)
 
 
 async def get_user_id(request: Request, api_key: APIKeyDep) -> str:

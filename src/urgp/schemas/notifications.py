@@ -19,4 +19,3 @@ class NotificationRequest(BaseModel):
     event_type: NotificationEventType
     triggered_at: datetime
     trigger_source: str = Field(..., min_length=1, max_length=255)
-
