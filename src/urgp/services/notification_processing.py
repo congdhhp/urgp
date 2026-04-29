@@ -83,6 +83,13 @@ class NotificationTransport(Protocol):
         """Send one rendered notification."""
 
 
+class PortalSettings(Protocol):
+    """Minimal settings contract for components that only need a portal URL."""
+
+    @property
+    def portal_base_url(self) -> str: ...
+
+
 class SubscriptionService:
     """Manage user-owned notification subscriptions."""
 
@@ -281,7 +288,7 @@ class NotificationHistoryService:
 class NotificationRenderer:
     """Render default email and webhook content for one notification event."""
 
-    def __init__(self, settings: URGPSettings) -> None:
+    def __init__(self, settings: PortalSettings) -> None:
         self._portal_base_url = settings.portal_base_url.rstrip("/")
 
     def render(
@@ -290,7 +297,9 @@ class NotificationRenderer:
         subscription: NotificationSubscription,
         request: NotificationRequest,
     ) -> RenderedNotification:
-        pull_request_count = len({pull_request.id for commit in manifest.commits for pull_request in commit.pull_requests})
+        pull_request_count = len(
+            {pull_request.id for commit in manifest.commits for pull_request in commit.pull_requests}
+        )
         issue_count = len({issue.id for commit in manifest.commits for issue in commit.issues})
         release_value = manifest.release.version if manifest.release is not None else "unassigned"
         portal_url = f"{self._portal_base_url}/?build={manifest.build_id}&product={manifest.product.external_id}"
@@ -480,9 +489,7 @@ class NotificationOrchestrator:
         session_factory = self._session_factory_provider()
         async with session_factory() as session:
             manifest = await session.scalar(
-                select(BuildManifest)
-                .options(*_manifest_load_options())
-                .where(BuildManifest.id == manifest_id)
+                select(BuildManifest).options(*_manifest_load_options()).where(BuildManifest.id == manifest_id)
             )
             if manifest is None:
                 msg = f"Manifest '{manifest_id}' could not be loaded for notification processing."
@@ -594,6 +601,7 @@ __all__ = [
     "NotificationOrchestrator",
     "NotificationRenderer",
     "NotificationTransport",
+    "PortalSettings",
     "RenderedNotification",
     "RetryOutcome",
     "RetryPolicy",

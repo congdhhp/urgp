@@ -187,6 +187,21 @@ def _build_lookup_http_error(exc: Exception) -> HTTPException:
 
 
 async def _publish_release_notification_if_needed(request: Request, result: BuildStatusTransitionResult) -> None:
+    """Publish a notification request when a build reaches RELEASED status.
+
+    **Design note — Intentional fire-and-forget (P1 trade-off):**
+    This function is called *after* the status transition has been committed.
+    If the publish fails (broker unavailable, network error, etc.), the build
+    status transition still succeeds and is returned to the caller, but no
+    notification event is emitted.  This means a released build could
+    silently miss its notification under rare failure conditions.
+
+    This is acceptable for P1 because:
+    - The status transition is the primary operation; notification is secondary.
+    - The failure is logged at ERROR level for operational visibility.
+    - A future P2 improvement should introduce a transactional outbox pattern
+      or a compensating background job to guarantee notification delivery.
+    """
     if result.status != BuildStatus.RELEASED:
         return
 
