@@ -13,6 +13,7 @@ from urgp.middleware.api_key_auth import APIKeyDep
 from urgp.middleware.rate_limiter import RateLimiter
 from urgp.schemas.responses import RateLimitExceededResponse
 from urgp.services.idempotency import IdempotencyService
+from urgp.services.platform_queries import PlatformQueryService
 from urgp.services.publisher import EventPublisher
 
 RedisType = aioredis.Redis
@@ -145,8 +146,24 @@ UserIdDep = Annotated[str, Depends(get_user_id)]
 WriteAccessDep = Annotated[str, Depends(require_write_access)]
 ReadAccessDep = Annotated[str, Depends(require_read_access)]
 
+
+def get_platform_service(session_factory: SessionFactoryDep) -> PlatformQueryService:
+    """Central factory for PlatformQueryService with signing_key propagation."""
+    from urgp.config import get_settings
+
+    settings = get_settings()
+    signing_key = getattr(settings, "signing_key", None)
+    return PlatformQueryService(
+        session_factory,
+        signing_key=signing_key if isinstance(signing_key, str) else None,
+    )
+
+
+PlatformServiceDep = Annotated[PlatformQueryService, Depends(get_platform_service)]
+
 __all__ = [
     "IdempotencyDep",
+    "PlatformServiceDep",
     "PublisherDep",
     "ReadAccessDep",
     "RedisDep",
@@ -154,6 +171,7 @@ __all__ = [
     "UserIdDep",
     "WriteAccessDep",
     "get_idempotency_service",
+    "get_platform_service",
     "get_publisher",
     "get_redis",
     "get_session_factory",

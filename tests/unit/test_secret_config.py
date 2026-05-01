@@ -34,4 +34,3 @@ def test_secret_config_codec_rejects_wrong_key() -> None:
 
     with pytest.raises(SecretConfigError):
         SecretConfigCodec("different-signing-key-for-secret-config").decrypt_value(encrypted)
-

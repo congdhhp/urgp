@@ -179,7 +179,7 @@ class IdempotencyService:
         self._pending_ttl_seconds = pending_ttl_seconds
 
     async def _eval_script(self, script: str, *args: str) -> Any:
-        eval_fn = cast(Any, self._redis.eval)
+        eval_fn = cast("Any", self._redis.eval)
         return await eval_fn(script, 1, *args)
 
     async def begin_processing(self, build_id: str, product_id: str) -> IdempotencyReservation:

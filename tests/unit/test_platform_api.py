@@ -10,6 +10,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from tests.unit.fakes import FakeRedis
+from urgp.dependencies import get_platform_service
 from urgp.main import create_app
 from urgp.models.enums import (
     ArtifactType,
@@ -130,15 +131,29 @@ def _notification_history_item() -> NotificationHistoryItemResponse:
     )
 
 
+def _mock_platform_service() -> MagicMock:
+    """Create a mock PlatformQueryService for dependency override."""
+    return MagicMock()
+
+
 @pytest.fixture
 def platform_client() -> TestClient:
     settings = _settings()
+    mock_service = _mock_platform_service()
     with patch("urgp.config.get_settings", return_value=settings):
         app = create_app()
         app.state.redis = FakeRedis()
         app.state.publisher = None
         app.state.session_factory = object()
-        yield TestClient(app, raise_server_exceptions=False)
+        app.dependency_overrides[get_platform_service] = lambda: mock_service
+        client = TestClient(app, raise_server_exceptions=False)
+        client._mock_platform_service = mock_service  # type: ignore[attr-defined]
+        yield client
+        app.dependency_overrides.clear()
+
+
+def _get_mock_service(client: TestClient) -> MagicMock:
+    return client._mock_platform_service  # type: ignore[attr-defined]
 
 
 class TestProductsApi:
@@ -147,31 +162,30 @@ class TestProductsApi:
             items=[ProductSummaryResponse(external_id="S32_IDE", name="S32 Design Studio")],
             total=1,
         )
-
-        with patch("urgp.api.products.PlatformQueryService") as service_cls:
-            service_cls.return_value.list_products = AsyncMock(return_value=response_model)
-            response = platform_client.get("/api/v1/products", headers={"X-API-Key": _TEST_API_KEY})
+        service = _get_mock_service(platform_client)
+        service.list_products = AsyncMock(return_value=response_model)
+        response = platform_client.get("/api/v1/products", headers={"X-API-Key": _TEST_API_KEY})
 
         assert response.status_code == 200
         assert response.json()["total"] == 1
 
     def test_list_releases_returns_404_for_unknown_product(self, platform_client: TestClient) -> None:
-        with patch("urgp.api.products.PlatformQueryService") as service_cls:
-            service_cls.return_value.list_releases = AsyncMock(side_effect=ProductNotFoundError("missing"))
-            response = platform_client.get("/api/v1/products/missing/releases", headers={"X-API-Key": _TEST_API_KEY})
+        service = _get_mock_service(platform_client)
+        service.list_releases = AsyncMock(side_effect=ProductNotFoundError("missing"))
+        response = platform_client.get("/api/v1/products/missing/releases", headers={"X-API-Key": _TEST_API_KEY})
 
         assert response.status_code == 404
         assert response.json()["detail"] == "missing"
 
     def test_release_trains_alias_matches_documented_route(self, platform_client: TestClient) -> None:
-        with patch("urgp.api.products.PlatformQueryService") as service_cls:
-            service_cls.return_value.list_releases = AsyncMock(
-                return_value={"product_id": "S32_IDE", "product_name": "S32 Design Studio", "items": [], "total": 0}
-            )
-            response = platform_client.get(
-                "/api/v1/products/S32_IDE/release-trains",
-                headers={"X-API-Key": _TEST_API_KEY},
-            )
+        service = _get_mock_service(platform_client)
+        service.list_releases = AsyncMock(
+            return_value={"product_id": "S32_IDE", "product_name": "S32 Design Studio", "items": [], "total": 0}
+        )
+        response = platform_client.get(
+            "/api/v1/products/S32_IDE/release-trains",
+            headers={"X-API-Key": _TEST_API_KEY},
+        )
 
         assert response.status_code == 200
         assert response.json()["total"] == 0
@@ -179,28 +193,26 @@ class TestProductsApi:
 
 class TestBuildsApi:
     def test_get_build_returns_detail_payload(self, platform_client: TestClient) -> None:
-        with patch("urgp.api.builds.PlatformQueryService") as service_cls:
-            service_cls.return_value.get_build = AsyncMock(return_value=_build_detail())
-            response = platform_client.get(
-                "/api/v1/builds/260330",
-                headers={"X-API-Key": _TEST_API_KEY},
-                params={"product_id": "S32_IDE"},
-            )
+        service = _get_mock_service(platform_client)
+        service.get_build = AsyncMock(return_value=_build_detail())
+        response = platform_client.get(
+            "/api/v1/builds/260330",
+            headers={"X-API-Key": _TEST_API_KEY},
+            params={"product_id": "S32_IDE"},
+        )
 
         assert response.status_code == 200
         assert response.json()["build_id"] == "260330"
 
     def test_transition_build_status_maps_conflict(self, platform_client: TestClient) -> None:
-        with patch("urgp.api.builds.PlatformQueryService") as service_cls:
-            service_cls.return_value.transition_build_status = AsyncMock(
-                side_effect=InvalidBuildTransitionError("invalid transition")
-            )
-            response = platform_client.patch(
-                "/api/v1/builds/260330/status",
-                headers={"X-API-Key": _TEST_API_KEY},
-                params={"product_id": "S32_IDE"},
-                json=BuildStatusTransitionRequest(status=BuildStatus.RELEASED).model_dump(mode="json"),
-            )
+        service = _get_mock_service(platform_client)
+        service.transition_build_status = AsyncMock(side_effect=InvalidBuildTransitionError("invalid transition"))
+        response = platform_client.patch(
+            "/api/v1/builds/260330/status",
+            headers={"X-API-Key": _TEST_API_KEY},
+            params={"product_id": "S32_IDE"},
+            json=BuildStatusTransitionRequest(status=BuildStatus.RELEASED).model_dump(mode="json"),
+        )
 
         assert response.status_code == 409
         assert response.json()["detail"] == "invalid transition"
@@ -223,28 +235,28 @@ class TestBuildsApi:
             verification_timestamp=datetime.now(tz=UTC),
         )
 
-        with patch("urgp.api.builds.PlatformQueryService") as service_cls:
-            service_cls.return_value.verify_build_integrity = AsyncMock(return_value=verification)
-            response = platform_client.post(
-                "/api/v1/builds/260330/verify",
-                headers={"X-API-Key": _TEST_API_KEY},
-                params={"product_id": "S32_IDE"},
-            )
+        service = _get_mock_service(platform_client)
+        service.verify_build_integrity = AsyncMock(return_value=verification)
+        response = platform_client.post(
+            "/api/v1/builds/260330/verify",
+            headers={"X-API-Key": _TEST_API_KEY},
+            params={"product_id": "S32_IDE"},
+        )
 
         assert response.status_code == 200
         assert response.json()["integrity_status"] == "valid"
 
     def test_lookup_conflict_returns_409(self, platform_client: TestClient) -> None:
-        with patch("urgp.api.builds.PlatformQueryService") as service_cls:
-            service_cls.return_value.get_build = AsyncMock(side_effect=AmbiguousBuildReferenceError("ambiguous"))
-            response = platform_client.get("/api/v1/builds/260330", headers={"X-API-Key": _TEST_API_KEY})
+        service = _get_mock_service(platform_client)
+        service.get_build = AsyncMock(side_effect=AmbiguousBuildReferenceError("ambiguous"))
+        response = platform_client.get("/api/v1/builds/260330", headers={"X-API-Key": _TEST_API_KEY})
 
         assert response.status_code == 409
 
     def test_missing_build_returns_404(self, platform_client: TestClient) -> None:
-        with patch("urgp.api.builds.PlatformQueryService") as service_cls:
-            service_cls.return_value.get_build = AsyncMock(side_effect=BuildNotFoundError("missing"))
-            response = platform_client.get("/api/v1/builds/260330", headers={"X-API-Key": _TEST_API_KEY})
+        service = _get_mock_service(platform_client)
+        service.get_build = AsyncMock(side_effect=BuildNotFoundError("missing"))
+        response = platform_client.get("/api/v1/builds/260330", headers={"X-API-Key": _TEST_API_KEY})
 
         assert response.status_code == 404
 
@@ -264,9 +276,9 @@ class TestActivityAndNotificationsApi:
             products=[ProductSummaryResponse(external_id="S32_IDE", name="S32 Design Studio")],
         )
 
-        with patch("urgp.api.activity.PlatformQueryService") as service_cls:
-            service_cls.return_value.get_activity = AsyncMock(return_value=payload)
-            response = platform_client.get("/api/v1/activity", headers={"X-API-Key": _TEST_API_KEY})
+        service = _get_mock_service(platform_client)
+        service.get_activity = AsyncMock(return_value=payload)
+        response = platform_client.get("/api/v1/activity", headers={"X-API-Key": _TEST_API_KEY})
 
         assert response.status_code == 200
         assert response.json()["totals"]["builds"] == 3

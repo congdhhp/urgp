@@ -6,7 +6,7 @@ import logging
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
 
-from urgp.dependencies import ReadAccessDep, SessionFactoryDep, WriteAccessDep
+from urgp.dependencies import PlatformServiceDep, ReadAccessDep, WriteAccessDep
 from urgp.models.enums import BuildStatus, NotificationEventType
 from urgp.schemas.notifications import NotificationRequest
 from urgp.schemas.platform import (
@@ -24,25 +24,16 @@ from urgp.services.platform_queries import (
     AmbiguousBuildReferenceError,
     BuildNotFoundError,
     BuildStatusTransitionResult,
-    PlatformQueryService,
 )
 
 router = APIRouter(prefix="/api/v1/builds", tags=["Builds"])
 logger = logging.getLogger(__name__)
 
 
-def _platform_service(session_factory: SessionFactoryDep) -> PlatformQueryService:
-    from urgp.config import get_settings
-
-    settings = get_settings()
-    signing_key = getattr(settings, "signing_key", None)
-    return PlatformQueryService(session_factory, signing_key=signing_key if isinstance(signing_key, str) else None)
-
-
 @router.get("", response_model=BuildListResponse, summary="List build manifests")
 async def list_builds(
     _api_key: ReadAccessDep,
-    session_factory: SessionFactoryDep,
+    platform_service: PlatformServiceDep,
     product_id: str | None = Query(default=None),
     release: str | None = Query(default=None),
     status_filter: BuildStatus | None = Query(default=None, alias="status"),
@@ -50,7 +41,7 @@ async def list_builds(
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
 ) -> BuildListResponse:
-    service = _platform_service(session_factory)
+    service = platform_service
     return await service.list_builds(
         product_id=product_id,
         release=release,
@@ -66,10 +57,10 @@ async def compare_builds(
     start: str,
     end: str,
     _api_key: ReadAccessDep,
-    session_factory: SessionFactoryDep,
+    platform_service: PlatformServiceDep,
     product_id: str | None = Query(default=None),
 ) -> BuildComparisonResponse:
-    service = _platform_service(session_factory)
+    service = platform_service
     try:
         return await service.compare_builds(start, end, product_id=product_id)
     except (BuildNotFoundError, AmbiguousBuildReferenceError) as exc:
@@ -84,9 +75,9 @@ async def compare_builds(
 async def find_builds_by_commit(
     commit_hash: str,
     _api_key: ReadAccessDep,
-    session_factory: SessionFactoryDep,
+    platform_service: PlatformServiceDep,
 ) -> BuildSearchResponse:
-    service = _platform_service(session_factory)
+    service = platform_service
     return await service.find_builds_by_commit(commit_hash)
 
 
@@ -98,9 +89,9 @@ async def find_builds_by_commit(
 async def find_builds_by_issue(
     issue_id: str,
     _api_key: ReadAccessDep,
-    session_factory: SessionFactoryDep,
+    platform_service: PlatformServiceDep,
 ) -> BuildSearchResponse:
-    service = _platform_service(session_factory)
+    service = platform_service
     return await service.find_builds_by_issue(issue_id)
 
 
@@ -108,10 +99,10 @@ async def find_builds_by_issue(
 async def get_build(
     build_ref: str,
     _api_key: ReadAccessDep,
-    session_factory: SessionFactoryDep,
+    platform_service: PlatformServiceDep,
     product_id: str | None = Query(default=None),
 ) -> BuildDetailResponse:
-    service = _platform_service(session_factory)
+    service = platform_service
     try:
         return await service.get_build(build_ref, product_id=product_id)
     except (BuildNotFoundError, AmbiguousBuildReferenceError) as exc:
@@ -122,10 +113,10 @@ async def get_build(
 async def get_artifacts(
     build_ref: str,
     _api_key: ReadAccessDep,
-    session_factory: SessionFactoryDep,
+    platform_service: PlatformServiceDep,
     product_id: str | None = Query(default=None),
 ) -> BuildArtifactsResponse:
-    service = _platform_service(session_factory)
+    service = platform_service
     try:
         return await service.get_artifacts(build_ref, product_id=product_id)
     except (BuildNotFoundError, AmbiguousBuildReferenceError) as exc:
@@ -140,10 +131,10 @@ async def get_artifacts(
 async def get_traceability(
     build_ref: str,
     _api_key: ReadAccessDep,
-    session_factory: SessionFactoryDep,
+    platform_service: PlatformServiceDep,
     product_id: str | None = Query(default=None),
 ) -> BuildTraceabilityResponse:
-    service = _platform_service(session_factory)
+    service = platform_service
     try:
         return await service.get_traceability(build_ref, product_id=product_id)
     except (BuildNotFoundError, AmbiguousBuildReferenceError) as exc:
@@ -159,11 +150,11 @@ async def transition_build_status(
     build_ref: str,
     _api_key: WriteAccessDep,
     payload: BuildStatusTransitionRequest,
-    session_factory: SessionFactoryDep,
+    platform_service: PlatformServiceDep,
     request: Request,
     product_id: str | None = Query(default=None),
 ) -> BuildDetailResponse:
-    service = _platform_service(session_factory)
+    service = platform_service
     try:
         result = await service.transition_build_status(build_ref, payload, product_id=product_id)
     except (BuildNotFoundError, AmbiguousBuildReferenceError) as exc:
@@ -178,10 +169,10 @@ async def transition_build_status(
 async def verify_build(
     build_ref: str,
     _api_key: ReadAccessDep,
-    session_factory: SessionFactoryDep,
+    platform_service: PlatformServiceDep,
     product_id: str | None = Query(default=None),
 ) -> BuildVerificationResponse:
-    service = _platform_service(session_factory)
+    service = platform_service
     try:
         return await service.verify_build_integrity(build_ref, product_id=product_id)
     except (BuildNotFoundError, AmbiguousBuildReferenceError) as exc:

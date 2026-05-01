@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, status
 
-from urgp.dependencies import ReadAccessDep, SessionFactoryDep, WriteAccessDep
+from urgp.dependencies import PlatformServiceDep, ReadAccessDep, WriteAccessDep
 from urgp.schemas.platform import (
     ProductCreateRequest,
     ProductListResponse,
@@ -13,36 +13,26 @@ from urgp.schemas.platform import (
     ReleaseListResponse,
     ReleaseSummaryResponse,
 )
-from urgp.services.platform_queries import PlatformQueryService, ProductNotFoundError
+from urgp.services.platform_queries import ProductNotFoundError
 
 router = APIRouter(prefix="/api/v1/products", tags=["Products"])
-
-
-def _platform_service(session_factory: SessionFactoryDep) -> PlatformQueryService:
-    from urgp.config import get_settings
-
-    settings = get_settings()
-    signing_key = getattr(settings, "signing_key", None)
-    return PlatformQueryService(session_factory, signing_key=signing_key if isinstance(signing_key, str) else None)
 
 
 @router.get("", response_model=ProductListResponse, summary="List onboarded products")
 async def list_products(
     _api_key: ReadAccessDep,
-    session_factory: SessionFactoryDep,
+    platform_service: PlatformServiceDep,
 ) -> ProductListResponse:
-    service = _platform_service(session_factory)
-    return await service.list_products()
+    return await platform_service.list_products()
 
 
 @router.post("", response_model=ProductSummaryResponse, status_code=status.HTTP_201_CREATED, summary="Create a product")
 async def create_product(
     _api_key: WriteAccessDep,
     payload: ProductCreateRequest,
-    session_factory: SessionFactoryDep,
+    platform_service: PlatformServiceDep,
 ) -> ProductSummaryResponse:
-    service = _platform_service(session_factory)
-    return await service.create_product(payload)
+    return await platform_service.create_product(payload)
 
 
 @router.get(
@@ -53,16 +43,16 @@ async def create_product(
 @router.get(
     "/{product_external_id}/release-trains",
     response_model=ReleaseListResponse,
-    summary="List release trains for a product",
+    summary="List release trains for a product (alias)",
+    deprecated=True,
 )
 async def list_releases(
     product_external_id: str,
     _api_key: ReadAccessDep,
-    session_factory: SessionFactoryDep,
+    platform_service: PlatformServiceDep,
 ) -> ReleaseListResponse:
-    service = _platform_service(session_factory)
     try:
-        return await service.list_releases(product_external_id)
+        return await platform_service.list_releases(product_external_id)
     except ProductNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
@@ -77,16 +67,16 @@ async def list_releases(
     "/{product_external_id}/release-trains",
     response_model=ReleaseSummaryResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Create a release train for a product",
+    summary="Create a release train for a product (alias)",
+    deprecated=True,
 )
 async def create_release(
     product_external_id: str,
     _api_key: WriteAccessDep,
     payload: ReleaseCreateRequest,
-    session_factory: SessionFactoryDep,
+    platform_service: PlatformServiceDep,
 ) -> ReleaseSummaryResponse:
-    service = _platform_service(session_factory)
     try:
-        return await service.create_release(product_external_id, payload)
+        return await platform_service.create_release(product_external_id, payload)
     except ProductNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc

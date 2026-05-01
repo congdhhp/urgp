@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from urgp.dependencies import ReadAccessDep, SessionFactoryDep
+from urgp.dependencies import PlatformServiceDep, ReadAccessDep
 from urgp.schemas.platform import ActivityResponse
-from urgp.services.platform_queries import PlatformQueryService
 
 router = APIRouter(prefix="/api/v1/activity", tags=["Activity"])
 
@@ -14,7 +13,6 @@ router = APIRouter(prefix="/api/v1/activity", tags=["Activity"])
 @router.get("", response_model=ActivityResponse, summary="Get platform activity dashboard data")
 async def get_activity(
     _api_key: ReadAccessDep,
-    session_factory: SessionFactoryDep,
+    platform_service: PlatformServiceDep,
 ) -> ActivityResponse:
-    service = PlatformQueryService(session_factory)
-    return await service.get_activity()
+    return await platform_service.get_activity()

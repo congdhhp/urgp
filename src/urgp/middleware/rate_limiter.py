@@ -78,7 +78,7 @@ class RateLimiter:
         self._redis = redis_client
 
     async def _eval_script(self, script: str, *args: str) -> Any:
-        eval_fn = cast(Any, self._redis.eval)
+        eval_fn = cast("Any", self._redis.eval)
         return await eval_fn(script, 1, *args)
 
     async def check_rate_limit(
