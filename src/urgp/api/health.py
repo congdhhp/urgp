@@ -9,7 +9,7 @@ Reference: docs/07-implementation-plan.md § P1-1.6
 from __future__ import annotations
 
 import time
-from typing import Any
+from typing import Any, cast
 
 from fastapi import APIRouter, Request, Response
 from sqlalchemy import text as sa_text
@@ -89,7 +89,8 @@ async def readiness_check(request: Request, response: Response) -> dict[str, Any
         if shared_redis is not None:
             await shared_redis.ping()
         else:
-            redis_client = aioredis.from_url(str(settings.redis_url), socket_timeout=5)
+            redis_factory = cast(Any, aioredis.from_url)
+            redis_client = redis_factory(str(settings.redis_url), socket_timeout=5)
             await redis_client.ping()
             aclose = getattr(redis_client, "aclose", None)
             if callable(aclose):

@@ -49,7 +49,7 @@ async def get_redis(request: Request) -> RedisType:
         raise _service_unavailable(
             "Redis is unavailable. Rate limiting and idempotency checks cannot be performed.",
         )
-    return cast(RedisType, redis_client)
+    return cast("RedisType", redis_client)
 
 
 async def get_publisher(request: Request) -> EventPublisher:
@@ -59,7 +59,7 @@ async def get_publisher(request: Request) -> EventPublisher:
             "RabbitMQ publisher is unavailable. Event ingestion is temporarily disabled.",
             error="broker_unavailable",
         )
-    return cast(EventPublisher, publisher)
+    return cast("EventPublisher", publisher)
 
 
 async def get_session_factory(request: Request) -> async_sessionmaker[AsyncSession]:
@@ -69,7 +69,7 @@ async def get_session_factory(request: Request) -> async_sessionmaker[AsyncSessi
             "Database session factory is unavailable. Platform queries are temporarily disabled.",
             error="database_unavailable",
         )
-    return cast(async_sessionmaker[AsyncSession], session_factory)
+    return cast("async_sessionmaker[AsyncSession]", session_factory)
 
 
 async def get_user_id(request: Request, api_key: APIKeyDep) -> str:

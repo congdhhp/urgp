@@ -10,7 +10,7 @@ Reference:
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 import typer
@@ -44,7 +44,7 @@ def verify_command(
         envvar="URGP_API_URL",
         help="URGP API base URL.",
     ),
-    product: Optional[str] = typer.Option(  # noqa: UP007
+    product: str | None = typer.Option(
         None,
         "--product",
         "-p",

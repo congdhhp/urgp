@@ -6,6 +6,7 @@ import asyncio
 import smtplib
 import uuid
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from email.message import EmailMessage
 from typing import cast
@@ -26,6 +27,19 @@ from urgp.services.platform_queries import _manifest_load_options
 
 class SubscriptionNotFoundError(LookupError):
     """Raised when a subscription does not exist or is not owned by the caller."""
+
+
+@dataclass(frozen=True, slots=True)
+class PendingNotificationDelivery:
+    """Delivery payload prepared inside the database transaction."""
+
+    notification_id: uuid.UUID
+    channel: NotificationChannel
+    recipient: str
+    subject: str
+    body: str
+    payload: dict[str, object]
+    webhook_url: str | None = None
 
 
 class NotificationProcessingService:
@@ -144,7 +158,7 @@ class NotificationProcessingService:
 
         # Phase 1: Create pending notification records inside a short-lived transaction.
         session_factory = self._session_factory_provider()
-        pending_deliveries: list[tuple[uuid.UUID, NotificationChannel, str, str, str, dict[str, object]]] = []
+        pending_deliveries: list[PendingNotificationDelivery] = []
         async with session_factory() as session:
             subscriptions = await self._load_matching_subscriptions(session, manifest)
             for subscription in subscriptions:
@@ -152,24 +166,33 @@ class NotificationProcessingService:
                 if record is None:
                     continue  # already sent
                 subject, body, payload = self._render_notification(manifest, subscription)
-                pending_deliveries.append((record.id, subscription.channel, subscription.user_id, subject, body, payload))
+                pending_deliveries.append(
+                    PendingNotificationDelivery(
+                        notification_id=record.id,
+                        channel=subscription.channel,
+                        recipient=subscription.user_id,
+                        subject=subject,
+                        body=body,
+                        payload=payload,
+                        webhook_url=subscription.webhook_url,
+                    )
+                )
             await session.commit()
 
         # Phase 2: Deliver notifications OUTSIDE any database transaction.
         delivery_outcomes: list[tuple[uuid.UUID, str, str | None, int]] = []
-        for notification_id, channel, user_id, subject, body, payload in pending_deliveries:
+        for delivery in pending_deliveries:
             last_error: str | None = None
             delivered = False
             attempts = 0
             for attempt in range(1, self._settings.notification_max_retries + 1):
                 attempts = attempt
                 try:
-                    if channel == NotificationChannel.EMAIL:
-                        await self._send_email(user_id, subject, body)
+                    if delivery.channel == NotificationChannel.EMAIL:
+                        await self._send_email(delivery.recipient, delivery.subject, delivery.body)
                     else:
-                        webhook_url = payload.get("_webhook_url")
-                        if isinstance(webhook_url, str):
-                            await self._send_webhook(webhook_url, payload)
+                        if delivery.webhook_url:
+                            await self._send_webhook(delivery.webhook_url, delivery.payload)
                         else:
                             msg = "Webhook subscription is missing webhook_url."
                             raise ValueError(msg)
@@ -182,9 +205,9 @@ class NotificationProcessingService:
                         await asyncio.sleep(delay)
 
             if delivered:
-                delivery_outcomes.append((notification_id, "sent", None, attempts - 1))
+                delivery_outcomes.append((delivery.notification_id, "sent", None, attempts - 1))
             else:
-                delivery_outcomes.append((notification_id, "failed", last_error, attempts))
+                delivery_outcomes.append((delivery.notification_id, "failed", last_error, attempts))
 
         # Phase 3: Update notification records with delivery outcomes in a new transaction.
         async with session_factory() as session:
@@ -288,31 +311,30 @@ class NotificationProcessingService:
         manifest: BuildManifest,
         subscription: NotificationSubscription,
     ) -> tuple[str, str, dict[str, object]]:
-        pull_request_count = len({pull_request.id for commit in manifest.commits for pull_request in commit.pull_requests})
+        pull_request_count = len(
+            {pull_request.id for commit in manifest.commits for pull_request in commit.pull_requests}
+        )
         issue_count = len({issue.id for commit in manifest.commits for issue in commit.issues})
         release_value = manifest.release.version if manifest.release is not None else "unassigned"
-        portal_link = (
-            f"{self._settings.portal_base_url.rstrip('/')}/?build={manifest.build_id}&product={manifest.product.external_id}"
-        )
+        portal_link = f"{self._settings.portal_base_url.rstrip('/')}/?build={manifest.build_id}&product={manifest.product.external_id}"
 
         payload = cast(
-            dict[str, object],
+            "dict[str, object]",
             {
-            "build_id": manifest.build_id,
-            "product": manifest.product.name,
-            "product_id": manifest.product.external_id,
-            "release": release_value,
-            "build_type": manifest.build_type.value,
-            "status": manifest.status.value,
-            "changes_summary": {
-                "commits": len(manifest.commits),
-                "pull_requests": pull_request_count,
-                "issues": issue_count,
-            },
-            "portal_url": portal_link,
-            "subscription_channel": subscription.channel.value,
-            "timestamp": manifest.created_at.isoformat(),
-            "_webhook_url": subscription.webhook_url,
+                "build_id": manifest.build_id,
+                "product": manifest.product.name,
+                "product_id": manifest.product.external_id,
+                "release": release_value,
+                "build_type": manifest.build_type.value,
+                "status": manifest.status.value,
+                "changes_summary": {
+                    "commits": len(manifest.commits),
+                    "pull_requests": pull_request_count,
+                    "issues": issue_count,
+                },
+                "portal_url": portal_link,
+                "subscription_channel": subscription.channel.value,
+                "timestamp": manifest.created_at.isoformat(),
             },
         )
 

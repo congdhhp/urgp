@@ -19,6 +19,7 @@ from urgp.messaging.topology import (
 from urgp.runtime import AppResources
 from urgp.schemas.ingest import IngestPayload
 from urgp.services.build_processing import BuildEventProcessor
+from urgp.services.cache import CacheService
 from urgp.services.notification_processing import NotificationProcessingService
 from urgp.services.signature import ManifestSignatureService
 
@@ -93,7 +94,7 @@ class WorkerProcess:
         try:
             await self._resources.open(
                 with_database=True,
-                with_redis=False,
+                with_redis=True,
                 with_publisher=False,
                 ensure_rabbitmq_topology=True,
             )
@@ -148,7 +149,18 @@ async def start_worker() -> None:
     settings = get_settings()
     resources = AppResources(settings)
     signer = ManifestSignatureService(settings.signing_key)
-    processor = BuildEventProcessor(resources.require_session_factory, signer, settings)
+
+    cache = CacheService(
+        redis_client_provider=lambda: resources.redis,
+        default_ttl=settings.redis_cache_ttl,
+    )
+
+    processor = BuildEventProcessor(
+        resources.require_session_factory,
+        signer,
+        settings,
+        cache=cache,
+    )
     notification_service = NotificationProcessingService(resources.require_session_factory, settings)
     hydration_worker = HydrationWorker(resources, processor)
     notification_worker = NotificationWorker(notification_service)

@@ -14,13 +14,13 @@ from __future__ import annotations
 
 import datetime
 import re
-from enum import Enum
+from enum import StrEnum
 from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
-class BuildTypeEnum(str, Enum):
+class BuildTypeEnum(StrEnum):
     """Build type classification matching the database enum."""
 
     NIGHTLY = "nightly"
@@ -29,7 +29,7 @@ class BuildTypeEnum(str, Enum):
     HOTFIX = "hotfix"
 
 
-class ArtifactTypeEnum(str, Enum):
+class ArtifactTypeEnum(StrEnum):
     """Artifact type classification matching the database enum."""
 
     ECLIPSE_P2 = "eclipse_p2"

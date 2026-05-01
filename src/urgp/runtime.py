@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import redis.asyncio as aioredis
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
@@ -123,10 +123,14 @@ class AppResources:
 
     async def _open_redis(self) -> None:
         try:
-            redis_client = aioredis.from_url(
-                str(self.settings.redis_url),
-                decode_responses=False,
-                socket_timeout=5,
+            redis_factory = cast(Any, aioredis.from_url)
+            redis_client = cast(
+                RedisType,
+                redis_factory(
+                    str(self.settings.redis_url),
+                    decode_responses=False,
+                    socket_timeout=5,
+                ),
             )
             await redis_client.ping()
             self.redis = redis_client

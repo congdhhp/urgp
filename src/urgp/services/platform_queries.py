@@ -58,14 +58,14 @@ class ProductNotFoundError(LookupError):
 
 def _manifest_load_options() -> tuple[ExecutableOption, ...]:
     return cast(
-        tuple[ExecutableOption, ...],
+        "tuple[ExecutableOption, ...]",
         (
-        selectinload(BuildManifest.product),
-        selectinload(BuildManifest.release),
-        selectinload(BuildManifest.artifacts),
-        selectinload(BuildManifest.notifications),
-        selectinload(BuildManifest.commits).selectinload(Commit.pull_requests),
-        selectinload(BuildManifest.commits).selectinload(Commit.issues),
+            selectinload(BuildManifest.product),
+            selectinload(BuildManifest.release),
+            selectinload(BuildManifest.artifacts),
+            selectinload(BuildManifest.notifications),
+            selectinload(BuildManifest.commits).selectinload(Commit.pull_requests),
+            selectinload(BuildManifest.commits).selectinload(Commit.issues),
         ),
     )
 
@@ -149,7 +149,7 @@ class PlatformQueryService:
             result = await session.scalars(
                 select(Product)
                 .options(
-                selectinload(Product.releases),
+                    selectinload(Product.releases),
                     selectinload(Product.manifests),
                 )
                 .order_by(Product.name.asc())
@@ -177,9 +177,7 @@ class PlatformQueryService:
     async def create_product(self, payload: ProductCreateRequest) -> ProductSummaryResponse:
         async with self._session_factory() as session:
             existing = await session.scalar(
-                select(Product).where(
-                    or_(Product.external_id == payload.external_id, Product.name == payload.name)
-                )
+                select(Product).where(or_(Product.external_id == payload.external_id, Product.name == payload.name))
             )
             if existing is None:
                 product = Product(
@@ -207,9 +205,7 @@ class PlatformQueryService:
         async with self._session_factory() as session:
             product = await session.scalar(
                 select(Product)
-                .options(
-                    selectinload(Product.releases).selectinload(Release.manifests)
-                )
+                .options(selectinload(Product.releases).selectinload(Release.manifests))
                 .where(Product.external_id == product_external_id)
             )
             if product is None:
@@ -274,18 +270,18 @@ class PlatformQueryService:
 
         async with self._session_factory() as session:
             totals = ActivityTotalsResponse(
-                products=cast(int, await session.scalar(select(func.count(Product.id))) or 0),
-                releases=cast(int, await session.scalar(select(func.count(Release.id))) or 0),
-                builds=cast(int, await session.scalar(select(func.count(BuildManifest.id))) or 0),
+                products=cast("int", await session.scalar(select(func.count(Product.id))) or 0),
+                releases=cast("int", await session.scalar(select(func.count(Release.id))) or 0),
+                builds=cast("int", await session.scalar(select(func.count(BuildManifest.id))) or 0),
                 released_builds=cast(
-                    int,
+                    "int",
                     await session.scalar(
                         select(func.count(BuildManifest.id)).where(BuildManifest.status == BuildStatus.RELEASED)
                     )
                     or 0,
                 ),
                 incomplete_builds=cast(
-                    int,
+                    "int",
                     await session.scalar(
                         select(func.count(BuildManifest.id)).where(BuildManifest.traceability_incomplete.is_(True))
                     )
@@ -317,10 +313,11 @@ class PlatformQueryService:
                 status=status,
                 traceability_incomplete=traceability_incomplete,
             )
-            total = cast(int, await session.scalar(select(func.count()).select_from(base_stmt.subquery())) or 0)
-            result = await session.scalars(
-                base_stmt.options(*_manifest_load_options()).offset(offset).limit(limit)
+            total = cast(
+                "int",
+                await session.scalar(select(func.count()).select_from(base_stmt.order_by(None).subquery())) or 0,
             )
+            result = await session.scalars(base_stmt.options(*_manifest_load_options()).offset(offset).limit(limit))
             manifests = list(result.all())
 
         return BuildListResponse(
@@ -368,7 +365,9 @@ class PlatformQueryService:
                 )
                 for commit in commits
             ]
-            repository_pull_requests = len({pull_request.id for commit in commits for pull_request in commit.pull_requests})
+            repository_pull_requests = len(
+                {pull_request.id for commit in commits for pull_request in commit.pull_requests}
+            )
             repository_issues = len({issue.id for commit in commits for issue in commit.issues})
             total_pull_requests += repository_pull_requests
             total_issues += repository_issues
@@ -405,7 +404,9 @@ class PlatformQueryService:
             end_manifest = await self._resolve_manifest(session, end_ref, product_id=product_id)
 
         start_commit_hashes = {commit.hash for commit in start_manifest.commits}
-        unique_commits = sorted(commit.hash for commit in end_manifest.commits if commit.hash not in start_commit_hashes)
+        unique_commits = sorted(
+            commit.hash for commit in end_manifest.commits if commit.hash not in start_commit_hashes
+        )
 
         start_pull_request_keys = {
             (pull_request.repository, pull_request.external_id)
@@ -423,7 +424,9 @@ class PlatformQueryService:
         ]
         unique_pull_requests.sort(key=lambda item: item.external_id)
 
-        start_issue_keys = {(issue.tracker_type, issue.external_id) for commit in start_manifest.commits for issue in commit.issues}
+        start_issue_keys = {
+            (issue.tracker_type, issue.external_id) for commit in start_manifest.commits for issue in commit.issues
+        }
         unique_issues = [
             _issue_to_response(issue)
             for issue in {
@@ -452,7 +455,7 @@ class PlatformQueryService:
                 .options(*_manifest_load_options())
                 .order_by(BuildManifest.created_at.desc())
             )
-            manifests = list(result.all())
+            manifests = list(result.unique().all())
 
         return BuildSearchResponse(
             query=commit_hash,
@@ -470,7 +473,7 @@ class PlatformQueryService:
                 .options(*_manifest_load_options())
                 .order_by(BuildManifest.created_at.desc())
             )
-            manifests = list(result.all())
+            manifests = list(result.unique().all())
 
         return BuildSearchResponse(
             query=issue_id,
@@ -571,9 +574,7 @@ class PlatformQueryService:
         manifest_uuid = _try_parse_uuid(build_ref)
         if manifest_uuid is not None:
             manifest = await session.scalar(
-                select(BuildManifest)
-                .where(BuildManifest.id == manifest_uuid)
-                .options(*_manifest_load_options())
+                select(BuildManifest).where(BuildManifest.id == manifest_uuid).options(*_manifest_load_options())
             )
             if manifest is None:
                 msg = f"Build '{build_ref}' was not found."
@@ -596,10 +597,7 @@ class PlatformQueryService:
             msg = f"Build '{build_ref}' was not found."
             raise BuildNotFoundError(msg)
         if len(manifests) > 1:
-            msg = (
-                f"Build reference '{build_ref}' matches multiple products. "
-                "Provide product_id to disambiguate."
-            )
+            msg = f"Build reference '{build_ref}' matches multiple products. Provide product_id to disambiguate."
             raise AmbiguousBuildReferenceError(msg)
         return manifests[0]
 
