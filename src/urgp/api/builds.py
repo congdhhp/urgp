@@ -31,6 +31,14 @@ router = APIRouter(prefix="/api/v1/builds", tags=["Builds"])
 logger = logging.getLogger(__name__)
 
 
+def _platform_service(session_factory: SessionFactoryDep) -> PlatformQueryService:
+    from urgp.config import get_settings
+
+    settings = get_settings()
+    signing_key = getattr(settings, "signing_key", None)
+    return PlatformQueryService(session_factory, signing_key=signing_key if isinstance(signing_key, str) else None)
+
+
 @router.get("", response_model=BuildListResponse, summary="List build manifests")
 async def list_builds(
     _api_key: ReadAccessDep,
@@ -42,7 +50,7 @@ async def list_builds(
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
 ) -> BuildListResponse:
-    service = PlatformQueryService(session_factory)
+    service = _platform_service(session_factory)
     return await service.list_builds(
         product_id=product_id,
         release=release,
@@ -61,7 +69,7 @@ async def compare_builds(
     session_factory: SessionFactoryDep,
     product_id: str | None = Query(default=None),
 ) -> BuildComparisonResponse:
-    service = PlatformQueryService(session_factory)
+    service = _platform_service(session_factory)
     try:
         return await service.compare_builds(start, end, product_id=product_id)
     except (BuildNotFoundError, AmbiguousBuildReferenceError) as exc:
@@ -78,7 +86,7 @@ async def find_builds_by_commit(
     _api_key: ReadAccessDep,
     session_factory: SessionFactoryDep,
 ) -> BuildSearchResponse:
-    service = PlatformQueryService(session_factory)
+    service = _platform_service(session_factory)
     return await service.find_builds_by_commit(commit_hash)
 
 
@@ -92,7 +100,7 @@ async def find_builds_by_issue(
     _api_key: ReadAccessDep,
     session_factory: SessionFactoryDep,
 ) -> BuildSearchResponse:
-    service = PlatformQueryService(session_factory)
+    service = _platform_service(session_factory)
     return await service.find_builds_by_issue(issue_id)
 
 
@@ -103,7 +111,7 @@ async def get_build(
     session_factory: SessionFactoryDep,
     product_id: str | None = Query(default=None),
 ) -> BuildDetailResponse:
-    service = PlatformQueryService(session_factory)
+    service = _platform_service(session_factory)
     try:
         return await service.get_build(build_ref, product_id=product_id)
     except (BuildNotFoundError, AmbiguousBuildReferenceError) as exc:
@@ -117,7 +125,7 @@ async def get_artifacts(
     session_factory: SessionFactoryDep,
     product_id: str | None = Query(default=None),
 ) -> BuildArtifactsResponse:
-    service = PlatformQueryService(session_factory)
+    service = _platform_service(session_factory)
     try:
         return await service.get_artifacts(build_ref, product_id=product_id)
     except (BuildNotFoundError, AmbiguousBuildReferenceError) as exc:
@@ -135,7 +143,7 @@ async def get_traceability(
     session_factory: SessionFactoryDep,
     product_id: str | None = Query(default=None),
 ) -> BuildTraceabilityResponse:
-    service = PlatformQueryService(session_factory)
+    service = _platform_service(session_factory)
     try:
         return await service.get_traceability(build_ref, product_id=product_id)
     except (BuildNotFoundError, AmbiguousBuildReferenceError) as exc:
@@ -155,7 +163,7 @@ async def transition_build_status(
     request: Request,
     product_id: str | None = Query(default=None),
 ) -> BuildDetailResponse:
-    service = PlatformQueryService(session_factory)
+    service = _platform_service(session_factory)
     try:
         result = await service.transition_build_status(build_ref, payload, product_id=product_id)
     except (BuildNotFoundError, AmbiguousBuildReferenceError) as exc:
@@ -173,7 +181,7 @@ async def verify_build(
     session_factory: SessionFactoryDep,
     product_id: str | None = Query(default=None),
 ) -> BuildVerificationResponse:
-    service = PlatformQueryService(session_factory)
+    service = _platform_service(session_factory)
     try:
         return await service.verify_build_integrity(build_ref, product_id=product_id)
     except (BuildNotFoundError, AmbiguousBuildReferenceError) as exc:

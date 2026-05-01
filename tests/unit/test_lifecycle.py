@@ -7,8 +7,8 @@ from datetime import UTC, datetime
 
 import pytest
 
-from urgp.models.enums import BuildStatus, BuildType
-from urgp.models.manifest import BuildManifest
+from urgp.models.enums import ArtifactType, BuildStatus, BuildType
+from urgp.models.manifest import Artifact, BuildManifest
 from urgp.services.lifecycle import (
     BuildLifecycleService,
     ImmutableManifestError,
@@ -86,6 +86,19 @@ class TestSignatureVerificationOnRelease:
         transition = service.transition(manifest, BuildStatus.RELEASED)
         assert transition.changed is True
         assert manifest.status == BuildStatus.RELEASED
+
+    def test_release_with_signing_key_generates_artifact_signature(self) -> None:
+        """Released manifests are signed from build_id + sorted artifact checksums."""
+        service = BuildLifecycleService()
+        manifest = _manifest(BuildStatus.TESTING, signature=None)
+        manifest.artifacts = [
+            Artifact(name="b.zip", type=ArtifactType.GENERIC, storage_uri="file:///b.zip", sha256_checksum="b" * 64),
+            Artifact(name="a.zip", type=ArtifactType.GENERIC, storage_uri="file:///a.zip", sha256_checksum="a" * 64),
+        ]
+
+        service.transition(manifest, BuildStatus.RELEASED, signing_key="test-secret")
+
+        assert manifest.signature == service.compute_manifest_signature(manifest, "test-secret")
 
     def test_tampered_signature_is_rejected(self) -> None:
         """Manifest with wrong signature is rejected on release."""

@@ -215,7 +215,7 @@ class URGPSettings(BaseSettings):
     def masked_dict(self) -> dict[str, Any]:
         """Return settings dict with sensitive values masked for logging."""
         data = self.model_dump()
-        sensitive_keys = {"jwt_secret_key", "signing_key", "smtp_password"}
+        sensitive_keys = {"api_keys", "jwt_secret_key", "signing_key", "smtp_password"}
         for key in sensitive_keys:
             if data.get(key):
                 data[key] = "***MASKED***"

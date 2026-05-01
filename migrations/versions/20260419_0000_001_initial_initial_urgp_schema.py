@@ -22,6 +22,8 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     """Create the initial URGP database schema."""
+    op.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
+
     build_status_enum = sa.Enum(
         "ingesting",
         "hydrating",

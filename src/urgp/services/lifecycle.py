@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
+import hmac
+import json
 import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -100,12 +103,13 @@ class BuildLifecycleService:
             )
             raise InvalidBuildTransitionError(msg)
 
-        # Integrity gate: verify signature before releasing
         if target_status == BuildStatus.RELEASED and verify_signature:
             self._verify_manifest_integrity(manifest, signing_key)
 
         manifest.status = target_status
         if target_status == BuildStatus.RELEASED:
+            if signing_key is not None:
+                manifest.signature = self.compute_manifest_signature(manifest, signing_key)
             manifest.released_at = datetime.now(tz=UTC)
 
         return LifecycleTransition(
@@ -113,6 +117,12 @@ class BuildLifecycleService:
             new_status=target_status,
             changed=True,
         )
+
+    def compute_manifest_signature(self, manifest: BuildManifest, signing_key: str) -> str:
+        """Compute the release-lock HMAC over build id and artifact checksums."""
+        canonical = _build_canonical_manifest_data(manifest)
+        encoded = json.dumps(canonical, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        return hmac.new(signing_key.encode("utf-8"), encoded, hashlib.sha256).hexdigest()
 
     def _verify_manifest_integrity(self, manifest: BuildManifest, signing_key: str | None) -> None:
         """Verify HMAC-SHA256 signature integrity before release.
@@ -130,14 +140,7 @@ class BuildLifecycleService:
             )
             return
 
-        # Re-compute the expected signature from canonical payload data
-        import hashlib
-        import hmac
-        import json
-
-        canonical = _build_canonical_manifest_data(manifest)
-        encoded = json.dumps(canonical, sort_keys=True, separators=(",", ":")).encode("utf-8")
-        expected = hmac.new(signing_key.encode("utf-8"), encoded, hashlib.sha256).hexdigest()
+        expected = self.compute_manifest_signature(manifest, signing_key)
 
         if not hmac.compare_digest(expected, manifest.signature):
             msg = (
@@ -150,18 +153,10 @@ class BuildLifecycleService:
 
 
 def _build_canonical_manifest_data(manifest: BuildManifest) -> dict[str, object]:
-    """Build canonical data dict for re-signing from stored manifest.
-
-    Note: This re-creates the canonical form from the stored ORM data.
-    For full round-trip verification, the original IngestPayload should
-    be preserved. This serves as a structural integrity check.
-    """
+    """Build canonical data for release signatures."""
     return {
         "build_id": manifest.build_id,
-        "product_id": manifest.product.external_id if manifest.product else "",
-        "release": manifest.release.version if manifest.release else "",
-        "build_type": manifest.build_type.value if manifest.build_type else "",
-        "status": manifest.status.value,
+        "artifact_checksums": sorted(artifact.sha256_checksum for artifact in manifest.artifacts),
     }
 
 

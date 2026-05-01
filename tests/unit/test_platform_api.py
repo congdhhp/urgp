@@ -163,6 +163,19 @@ class TestProductsApi:
         assert response.status_code == 404
         assert response.json()["detail"] == "missing"
 
+    def test_release_trains_alias_matches_documented_route(self, platform_client: TestClient) -> None:
+        with patch("urgp.api.products.PlatformQueryService") as service_cls:
+            service_cls.return_value.list_releases = AsyncMock(
+                return_value={"product_id": "S32_IDE", "product_name": "S32 Design Studio", "items": [], "total": 0}
+            )
+            response = platform_client.get(
+                "/api/v1/products/S32_IDE/release-trains",
+                headers={"X-API-Key": _TEST_API_KEY},
+            )
+
+        assert response.status_code == 200
+        assert response.json()["total"] == 0
+
 
 class TestBuildsApi:
     def test_get_build_returns_detail_payload(self, platform_client: TestClient) -> None:

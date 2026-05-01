@@ -6,7 +6,7 @@ import uuid
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import cast
+from typing import Any, cast
 
 from sqlalchemy import Select, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -43,6 +43,7 @@ from urgp.schemas.platform import (
     TraceabilityRepositoryResponse,
 )
 from urgp.services.lifecycle import BuildLifecycleService
+from urgp.services.secret_config import SecretConfigCodec
 
 
 class BuildNotFoundError(LookupError):
@@ -148,12 +149,34 @@ def _build_summary(manifest: BuildManifest) -> BuildSummaryResponse:
     )
 
 
+def _product_summary(product: Product) -> ProductSummaryResponse:
+    last_manifest = max(product.manifests, key=lambda item: item.created_at, default=None)
+    return ProductSummaryResponse(
+        external_id=product.external_id,
+        name=product.name,
+        description=product.description,
+        release_count=len(product.releases),
+        build_count=len(product.manifests),
+        last_build_id=last_manifest.build_id if last_manifest is not None else None,
+        last_build_status=last_manifest.status if last_manifest is not None else None,
+        last_build_at=last_manifest.created_at if last_manifest is not None else None,
+    )
+
+
 class PlatformQueryService:
     """Owns read models and platform management operations."""
 
-    def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
+    def __init__(
+        self,
+        session_factory: async_sessionmaker[AsyncSession],
+        *,
+        signing_key: str | None = None,
+        secret_codec: SecretConfigCodec | None = None,
+    ) -> None:
         self._session_factory = session_factory
         self._lifecycle = BuildLifecycleService()
+        self._signing_key = signing_key
+        self._secret_codec = secret_codec or (SecretConfigCodec(signing_key) if signing_key else None)
 
     async def list_products(self) -> ProductListResponse:
         async with self._session_factory() as session:
@@ -169,48 +192,45 @@ class PlatformQueryService:
 
         items: list[ProductSummaryResponse] = []
         for product in products:
-            last_manifest = max(product.manifests, key=lambda item: item.created_at, default=None)
-            items.append(
-                ProductSummaryResponse(
-                    external_id=product.external_id,
-                    name=product.name,
-                    description=product.description,
-                    release_count=len(product.releases),
-                    build_count=len(product.manifests),
-                    last_build_id=last_manifest.build_id if last_manifest is not None else None,
-                    last_build_status=last_manifest.status if last_manifest is not None else None,
-                    last_build_at=last_manifest.created_at if last_manifest is not None else None,
-                )
-            )
+            items.append(_product_summary(product))
 
         return ProductListResponse(items=items, total=len(items))
 
     async def create_product(self, payload: ProductCreateRequest) -> ProductSummaryResponse:
         async with self._session_factory() as session:
             existing = await session.scalar(
-                select(Product).where(or_(Product.external_id == payload.external_id, Product.name == payload.name))
+                select(Product)
+                .options(
+                    selectinload(Product.releases),
+                    selectinload(Product.manifests),
+                )
+                .where(or_(Product.external_id == payload.external_id, Product.name == payload.name))
             )
             if existing is None:
                 product = Product(
                     external_id=payload.external_id,
                     name=payload.name,
                     description=payload.description,
-                    git_config=payload.git_config,
-                    issue_config=payload.issue_config,
+                    git_config=self._encrypt_integration_config(payload.git_config),
+                    issue_config=self._encrypt_integration_config(payload.issue_config),
                 )
                 session.add(product)
                 await session.commit()
                 await session.refresh(product)
+                await session.refresh(product, attribute_names=["releases", "manifests"])
             else:
                 product = existing
+                if payload.description is not None:
+                    product.description = payload.description
+                if payload.git_config is not None:
+                    product.git_config = self._encrypt_integration_config(payload.git_config)
+                if payload.issue_config is not None:
+                    product.issue_config = self._encrypt_integration_config(payload.issue_config)
+                await session.commit()
+                await session.refresh(product)
+                await session.refresh(product, attribute_names=["releases", "manifests"])
 
-        return ProductSummaryResponse(
-            external_id=product.external_id,
-            name=product.name,
-            description=product.description,
-            release_count=0,
-            build_count=0,
-        )
+        return _product_summary(product)
 
     async def list_releases(self, product_external_id: str) -> ReleaseListResponse:
         async with self._session_factory() as session:
@@ -265,14 +285,16 @@ class PlatformQueryService:
                 session.add(release)
                 await session.commit()
                 await session.refresh(release)
+                await session.refresh(release, attribute_names=["manifests"])
             else:
                 release = existing
+                await session.refresh(release, attribute_names=["manifests"])
 
         return ReleaseSummaryResponse(
             version=release.version,
             release_type=release.release_type,
             status=release.status,
-            build_count=0,
+            build_count=len(release.manifests),
         )
 
     async def get_activity(self, *, recent_limit: int = 8) -> ActivityResponse:
@@ -501,7 +523,12 @@ class PlatformQueryService:
     ) -> BuildStatusTransitionResult:
         async with self._session_factory() as session:
             manifest = await self._resolve_manifest(session, build_ref, product_id=product_id)
-            self._lifecycle.transition(manifest, payload.status, allow_noop=False)
+            self._lifecycle.transition(
+                manifest,
+                payload.status,
+                allow_noop=False,
+                signing_key=self._signing_key,
+            )
             await session.commit()
             await session.refresh(manifest)
 
@@ -528,6 +555,16 @@ class PlatformQueryService:
             BuildStatus.INGESTING,
             BuildStatus.HYDRATING,
         }
+        signature_detail: str | None = None
+        if (
+            self._signing_key is not None
+            and manifest.signature is not None
+            and manifest.status in {BuildStatus.RELEASED, BuildStatus.DEPRECATED}
+        ):
+            expected_signature = self._lifecycle.compute_manifest_signature(manifest, self._signing_key)
+            if manifest.signature != expected_signature:
+                signature_detail = "Manifest release signature does not match stored artifacts."
+                overall_valid = False
 
         for artifact in manifest.artifacts:
             detail = "Artifact metadata is internally consistent."
@@ -548,7 +585,7 @@ class PlatformQueryService:
                     type=artifact.type,
                     sha256=artifact.sha256_checksum,
                     integrity_status=integrity_status,
-                    detail=detail,
+                    detail=signature_detail or detail,
                 )
             )
 
@@ -579,6 +616,11 @@ class PlatformQueryService:
         if traceability_incomplete is not None:
             stmt = stmt.where(BuildManifest.traceability_incomplete.is_(traceability_incomplete))
         return stmt.order_by(BuildManifest.created_at.desc())
+
+    def _encrypt_integration_config(self, config: dict[str, object] | None) -> dict[str, Any] | None:
+        if self._secret_codec is None:
+            return config
+        return self._secret_codec.encrypt_config(config)
 
     async def _resolve_manifest(
         self,

@@ -8,6 +8,7 @@ from urgp.integrations.git.github import GitHubProvider
 from urgp.integrations.issues.jira import JiraTracker
 from urgp.services.build_processing import BuildEventProcessor, _build_default_product_name, _infer_release_type
 from urgp.services.cache import CacheService
+from urgp.services.secret_config import SecretConfigCodec
 
 
 class TestBuildProcessingHelpers:
@@ -65,3 +66,27 @@ class TestBuildEventProcessorProviderResolution:
         )
 
         assert isinstance(tracker, JiraTracker)
+
+    def test_resolve_provider_decrypts_stored_credentials(self) -> None:
+        settings = MagicMock()
+        settings.default_git_provider = "github"
+        settings.default_issue_tracker = "jira"
+        settings.signing_key = "test-signing-key-for-integration-config"
+        codec = SecretConfigCodec(settings.signing_key)
+        processor = BuildEventProcessor(
+            lambda: MagicMock(),
+            MagicMock(),
+            settings,
+            cache=CacheService(None),
+        )
+
+        provider = processor._resolve_git_provider(
+            codec.encrypt_config(
+                {
+                    "provider": "github",
+                    "credentials": {"authentication_token": "test-token"},
+                }
+            )
+        )
+
+        assert isinstance(provider, GitHubProvider)

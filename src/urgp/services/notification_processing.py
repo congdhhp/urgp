@@ -105,7 +105,10 @@ class SubscriptionService:
                     selectinload(NotificationSubscription.product),
                     selectinload(NotificationSubscription.release),
                 )
-                .where(NotificationSubscription.user_id == user_id)
+                .where(
+                    NotificationSubscription.user_id == user_id,
+                    NotificationSubscription.active.is_(True),
+                )
                 .order_by(NotificationSubscription.created_at.desc())
             )
             subscriptions = list(result.all())

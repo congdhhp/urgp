@@ -25,6 +25,7 @@ from urgp.models.traceability import Commit, build_commits
 from urgp.schemas.ingest import IngestPayload
 from urgp.services.cache import CacheService
 from urgp.services.lifecycle import BuildLifecycleService
+from urgp.services.secret_config import SecretConfigCodec
 from urgp.services.signature import ManifestSignatureService
 from urgp.services.traceability import TraceabilityHydrator
 
@@ -273,6 +274,8 @@ class BuildEventProcessor:
         self._cache = cache
         self._default_git_provider = git_provider
         self._default_issue_tracker = issue_tracker
+        signing_key = getattr(settings, "signing_key", None)
+        self._secret_codec = SecretConfigCodec(signing_key) if isinstance(signing_key, str) and signing_key else None
 
     async def process(self, payload: IngestPayload) -> PersistedBuildResult:
         """Persist one build payload in a single transaction."""
@@ -308,6 +311,7 @@ class BuildEventProcessor:
             return result
 
     def _resolve_git_provider(self, git_config: dict[str, Any] | None) -> GitProvider | None:
+        git_config = self._decrypt_integration_config(git_config)
         return (
             create_git_provider(
                 git_config,
@@ -318,6 +322,7 @@ class BuildEventProcessor:
         )
 
     def _resolve_issue_tracker(self, issue_config: dict[str, Any] | None) -> IssueTracker | None:
+        issue_config = self._decrypt_integration_config(issue_config)
         return (
             create_issue_tracker(
                 issue_config,
@@ -326,6 +331,11 @@ class BuildEventProcessor:
             )
             or self._default_issue_tracker
         )
+
+    def _decrypt_integration_config(self, config: dict[str, Any] | None) -> dict[str, Any] | None:
+        if self._secret_codec is None:
+            return config
+        return self._secret_codec.decrypt_config(config)
 
 
 def _build_default_product_name(product_external_id: str) -> str:

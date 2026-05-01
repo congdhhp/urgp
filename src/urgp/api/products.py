@@ -18,12 +18,20 @@ from urgp.services.platform_queries import PlatformQueryService, ProductNotFound
 router = APIRouter(prefix="/api/v1/products", tags=["Products"])
 
 
+def _platform_service(session_factory: SessionFactoryDep) -> PlatformQueryService:
+    from urgp.config import get_settings
+
+    settings = get_settings()
+    signing_key = getattr(settings, "signing_key", None)
+    return PlatformQueryService(session_factory, signing_key=signing_key if isinstance(signing_key, str) else None)
+
+
 @router.get("", response_model=ProductListResponse, summary="List onboarded products")
 async def list_products(
     _api_key: ReadAccessDep,
     session_factory: SessionFactoryDep,
 ) -> ProductListResponse:
-    service = PlatformQueryService(session_factory)
+    service = _platform_service(session_factory)
     return await service.list_products()
 
 
@@ -33,7 +41,7 @@ async def create_product(
     payload: ProductCreateRequest,
     session_factory: SessionFactoryDep,
 ) -> ProductSummaryResponse:
-    service = PlatformQueryService(session_factory)
+    service = _platform_service(session_factory)
     return await service.create_product(payload)
 
 
@@ -42,12 +50,17 @@ async def create_product(
     response_model=ReleaseListResponse,
     summary="List release trains for a product",
 )
+@router.get(
+    "/{product_external_id}/release-trains",
+    response_model=ReleaseListResponse,
+    summary="List release trains for a product",
+)
 async def list_releases(
     product_external_id: str,
     _api_key: ReadAccessDep,
     session_factory: SessionFactoryDep,
 ) -> ReleaseListResponse:
-    service = PlatformQueryService(session_factory)
+    service = _platform_service(session_factory)
     try:
         return await service.list_releases(product_external_id)
     except ProductNotFoundError as exc:
@@ -60,13 +73,19 @@ async def list_releases(
     status_code=status.HTTP_201_CREATED,
     summary="Create a release train for a product",
 )
+@router.post(
+    "/{product_external_id}/release-trains",
+    response_model=ReleaseSummaryResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a release train for a product",
+)
 async def create_release(
     product_external_id: str,
     _api_key: WriteAccessDep,
     payload: ReleaseCreateRequest,
     session_factory: SessionFactoryDep,
 ) -> ReleaseSummaryResponse:
-    service = PlatformQueryService(session_factory)
+    service = _platform_service(session_factory)
     try:
         return await service.create_release(product_external_id, payload)
     except ProductNotFoundError as exc:

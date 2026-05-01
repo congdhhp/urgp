@@ -199,11 +199,12 @@ class TestMasking:
 
     def test_masked_dict_hides_secrets(self) -> None:
         """masked_dict() replaces sensitive values with ***MASKED***."""
-        env = _make_env()
+        env = _make_env({"URGP_API_KEYS": '["test-api-key"]'})
         with patch.dict(os.environ, env, clear=False):
             settings = URGPSettings()  # type: ignore[call-arg]
 
         masked = settings.masked_dict()
+        assert masked["api_keys"] == "***MASKED***"
         assert masked["jwt_secret_key"] == "***MASKED***"
         assert masked["signing_key"] == "***MASKED***"
 
