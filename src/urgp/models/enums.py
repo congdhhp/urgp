@@ -58,6 +58,7 @@ class NotificationDeliveryStatus(enum.StrEnum):
     FAILED = "failed"
 
 
+
 class BuildType(enum.StrEnum):
     """Build type classification."""
 

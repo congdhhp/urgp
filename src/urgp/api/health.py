@@ -9,7 +9,7 @@ Reference: docs/07-implementation-plan.md § P1-1.6
 from __future__ import annotations
 
 import time
-from typing import Any
+from typing import Any, cast
 
 from fastapi import APIRouter, Request, Response
 from sqlalchemy import text as sa_text

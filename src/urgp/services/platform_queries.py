@@ -324,7 +324,10 @@ class PlatformQueryService:
                 status=status,
                 traceability_incomplete=traceability_incomplete,
             )
-            total = cast("int", await session.scalar(select(func.count()).select_from(base_stmt.subquery())) or 0)
+            total = cast(
+                "int",
+                await session.scalar(select(func.count()).select_from(base_stmt.order_by(None).subquery())) or 0,
+            )
             result = await session.scalars(base_stmt.options(*_manifest_load_options()).offset(offset).limit(limit))
             manifests = list(result.all())
 
@@ -463,7 +466,7 @@ class PlatformQueryService:
                 .options(*_manifest_load_options())
                 .order_by(BuildManifest.created_at.desc())
             )
-            manifests = list(result.all())
+            manifests = list(result.unique().all())
 
         return BuildSearchResponse(
             query=commit_hash,
@@ -481,7 +484,7 @@ class PlatformQueryService:
                 .options(*_manifest_load_options())
                 .order_by(BuildManifest.created_at.desc())
             )
-            manifests = list(result.all())
+            manifests = list(result.unique().all())
 
         return BuildSearchResponse(
             query=issue_id,

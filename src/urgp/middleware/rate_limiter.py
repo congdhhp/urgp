@@ -13,6 +13,7 @@ import logging
 import time
 import uuid
 from dataclasses import dataclass
+from typing import Any, cast
 
 import redis.asyncio as aioredis
 
@@ -76,6 +77,10 @@ class RateLimiter:
     def __init__(self, redis_client: RedisType) -> None:
         self._redis = redis_client
 
+    async def _eval_script(self, script: str, *args: str) -> Any:
+        eval_fn = cast(Any, self._redis.eval)
+        return await eval_fn(script, 1, *args)
+
     async def check_rate_limit(
         self,
         api_key: str,
@@ -94,9 +99,8 @@ class RateLimiter:
         reset_at = int(now) + _WINDOW_SECONDS
         member = f"{now}:{uuid.uuid4().hex}"
 
-        raw_result = await self._redis.eval(  # type: ignore[misc]
+        raw_result = await self._eval_script(
             _SLIDING_WINDOW_SCRIPT,
-            1,
             key,
             str(now),
             str(window_start),
