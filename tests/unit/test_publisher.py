@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
+import uuid
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 
 from urgp.messaging.topology import EXCHANGE_DLX, ROUTING_KEY_NOTIFY, ROUTING_KEY_PROCESS
-from urgp.models.enums import ArtifactType, BuildType
+from urgp.models.enums import ArtifactType, BuildType, NotificationEventType
 from urgp.schemas.ingest import IngestPayload
+from urgp.schemas.notifications import NotificationRequest
 from urgp.services.publisher import EventPublisher
 
 
@@ -50,35 +52,45 @@ def _build_mock_connection(mock_channel: AsyncMock) -> AsyncMock:
     return connection
 
 
-def _attach_transaction(mock_channel: AsyncMock) -> MagicMock:
-    transaction = MagicMock()
-
-    @asynccontextmanager
-    async def _transaction_ctx():
-        yield transaction
-
-    mock_channel.transaction = _transaction_ctx
-    return transaction
-
-
 class TestEventPublisher:
     """P1-3.T5: RabbitMQ message publishing tests."""
 
-    async def test_publish_sends_to_both_queues(self) -> None:
+    async def test_publish_sends_to_processing_queue(self) -> None:
         publisher = EventPublisher("amqp://test:test@localhost:5672/")
 
         mock_exchange = AsyncMock()
         mock_channel = AsyncMock()
         mock_channel.get_exchange = AsyncMock(return_value=mock_exchange)
-        _attach_transaction(mock_channel)
         publisher._connection = _build_mock_connection(mock_channel)
 
         await publisher.publish(_valid_payload())
 
         mock_channel.get_exchange.assert_awaited_once()
-        assert mock_exchange.publish.await_count == 2
-        routing_keys = [call.kwargs["routing_key"] for call in mock_exchange.publish.await_args_list]
-        assert routing_keys == [ROUTING_KEY_PROCESS, ROUTING_KEY_NOTIFY]
+        mock_exchange.publish.assert_awaited_once()
+        assert mock_exchange.publish.await_args.kwargs["routing_key"] == ROUTING_KEY_PROCESS
+
+    async def test_publish_notification_request_sends_to_notification_queue(self) -> None:
+        publisher = EventPublisher("amqp://test:test@localhost:5672/")
+
+        mock_exchange = AsyncMock()
+        mock_channel = AsyncMock()
+        mock_channel.get_exchange = AsyncMock(return_value=mock_exchange)
+        publisher._connection = _build_mock_connection(mock_channel)
+
+        await publisher.publish_notification_request(
+            NotificationRequest(
+                manifest_id=uuid.uuid4(),
+                build_id="260330",
+                product_id="S32_IDE",
+                event_type=NotificationEventType.BUILD_COMPLETED,
+                triggered_at=datetime.now(tz=UTC),
+                trigger_source="hydration_worker",
+            )
+        )
+
+        mock_channel.get_exchange.assert_awaited_once()
+        mock_exchange.publish.assert_awaited_once()
+        assert mock_exchange.publish.await_args.kwargs["routing_key"] == ROUTING_KEY_NOTIFY
 
     async def test_publish_returns_timestamp(self) -> None:
         publisher = EventPublisher("amqp://test:test@localhost:5672/")
@@ -86,7 +98,6 @@ class TestEventPublisher:
         mock_exchange = AsyncMock()
         mock_channel = AsyncMock()
         mock_channel.get_exchange = AsyncMock(return_value=mock_exchange)
-        _attach_transaction(mock_channel)
         publisher._connection = _build_mock_connection(mock_channel)
 
         result = await publisher.publish(_valid_payload())

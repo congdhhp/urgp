@@ -14,6 +14,7 @@ from urgp.schemas.ingest import (
     CommitHashSchema,
     IngestPayload,
 )
+from urgp.schemas.notifications import NotificationRequest
 from urgp.schemas.responses import (
     DLQCountResponse,
     IngestAcceptedResponse,
@@ -31,6 +32,7 @@ __all__ = [
     "ArtifactSchema",
     "CIMetadataSchema",
     "IngestPayload",
+    "NotificationRequest",
     # Responses
     "IngestAcceptedResponse",
     "IngestDuplicateResponse",

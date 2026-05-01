@@ -2279,35 +2279,6 @@ shellingham = ">=1.3.0"
 typing-extensions = ">=3.7.4.3"
 
 [[package]]
-name = "types-cffi"
-version = "2.0.0.20260408"
-description = "Typing stubs for cffi"
-optional = false
-python-versions = ">=3.10"
-files = [
-    {file = "types_cffi-2.0.0.20260408-py3-none-any.whl", hash = "sha256:68bd296742b4ff7c0afe3547f50bd0acc55416ecf322ffefd2b7344ef6388a42"},
-    {file = "types_cffi-2.0.0.20260408.tar.gz", hash = "sha256:aa8b9c456ab715c079fc655929811f21f331bfb940f4a821987c581bf4e36230"},
-]
-
-[package.dependencies]
-types-setuptools = "*"
-
-[[package]]
-name = "types-pyopenssl"
-version = "24.1.0.20240722"
-description = "Typing stubs for pyOpenSSL"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "types-pyOpenSSL-24.1.0.20240722.tar.gz", hash = "sha256:47913b4678a01d879f503a12044468221ed8576263c1540dcb0484ca21b08c39"},
-    {file = "types_pyOpenSSL-24.1.0.20240722-py3-none-any.whl", hash = "sha256:6a7a5d2ec042537934cfb4c9d4deb0e16c4c6250b09358df1f083682fe6fda54"},
-]
-
-[package.dependencies]
-cryptography = ">=35.0.0"
-types-cffi = "*"
-
-[[package]]
 name = "types-pyyaml"
 version = "6.0.12.20260408"
 description = "Typing stubs for PyYAML"
@@ -2316,32 +2287,6 @@ python-versions = ">=3.10"
 files = [
     {file = "types_pyyaml-6.0.12.20260408-py3-none-any.whl", hash = "sha256:fbc42037d12159d9c801ebfcc79ebd28335a7c13b08a4cfbc6916df78fee9384"},
     {file = "types_pyyaml-6.0.12.20260408.tar.gz", hash = "sha256:92a73f2b8d7f39ef392a38131f76b970f8c66e4c42b3125ae872b7c93b556307"},
-]
-
-[[package]]
-name = "types-redis"
-version = "4.6.0.20241004"
-description = "Typing stubs for redis"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "types-redis-4.6.0.20241004.tar.gz", hash = "sha256:5f17d2b3f9091ab75384153bfa276619ffa1cf6a38da60e10d5e6749cc5b902e"},
-    {file = "types_redis-4.6.0.20241004-py3-none-any.whl", hash = "sha256:ef5da68cb827e5f606c8f9c0b49eeee4c2669d6d97122f301d3a55dc6a63f6ed"},
-]
-
-[package.dependencies]
-cryptography = ">=35.0.0"
-types-pyOpenSSL = "*"
-
-[[package]]
-name = "types-setuptools"
-version = "82.0.0.20260408"
-description = "Typing stubs for setuptools"
-optional = false
-python-versions = ">=3.10"
-files = [
-    {file = "types_setuptools-82.0.0.20260408-py3-none-any.whl", hash = "sha256:ece0a215cdfa6463a65fd6f68bd940f39e455729300ddfe61cab1147ed1d2462"},
-    {file = "types_setuptools-82.0.0.20260408.tar.gz", hash = "sha256:036c68caf7e672a699f5ebbf914708d40644c14e05298bc49f7272be91cf43d3"},
 ]
 
 [[package]]
@@ -2810,4 +2755,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "d1020d2db0884d956014b90d609e556d821667dc6a4536d2fb0240b26df2679f"
+content-hash = "a02e3a5d1cb7d43a330a29dab2c4cc3c3b743f535d6d2a9f9f54c2ebb782e3d1"

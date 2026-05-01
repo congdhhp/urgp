@@ -36,6 +36,7 @@ class PersistedBuildResult:
     manifest_id: uuid.UUID
     product_id: uuid.UUID
     release_id: uuid.UUID
+    status: BuildStatus
     signature: str
     created: bool
     traceability_incomplete: bool
@@ -83,6 +84,7 @@ class BuildPersistenceService:
                     select(
                         BuildManifest.id,
                         BuildManifest.release_id,
+                        BuildManifest.status,
                         BuildManifest.signature,
                         BuildManifest.traceability_incomplete,
                     ).where(
@@ -96,6 +98,7 @@ class BuildPersistenceService:
                 manifest_id=existing_manifest.id,
                 product_id=product_id,
                 release_id=existing_manifest.release_id,
+                status=existing_manifest.status,
                 signature=existing_manifest.signature or self._signer.sign_payload(payload),
                 created=False,
                 traceability_incomplete=existing_manifest.traceability_incomplete,
@@ -109,6 +112,7 @@ class BuildPersistenceService:
             manifest_id=manifest_id,
             product_id=product_id,
             release_id=release_id,
+            status=BuildStatus.INGESTING,
             signature=created_manifest.signature,
             created=True,
             traceability_incomplete=created_manifest.traceability_incomplete,
@@ -296,6 +300,7 @@ class BuildEventProcessor:
                         manifest_id=result.manifest_id,
                         product_id=result.product_id,
                         release_id=result.release_id,
+                        status=manifest.status,
                         signature=result.signature,
                         created=result.created,
                         traceability_incomplete=manifest.traceability_incomplete,

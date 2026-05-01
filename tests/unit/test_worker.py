@@ -9,8 +9,9 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from pydantic import ValidationError
 
+from urgp.models.enums import BuildStatus
 from urgp.services.build_processing import PersistedBuildResult
-from urgp.worker.hydration_worker import HydrationWorker
+from urgp.worker.hydration_worker import HydrationWorker, NotificationWorker
 
 
 class _ProcessContext:
@@ -58,17 +59,21 @@ class TestHydrationWorker:
                 manifest_id=uuid.uuid4(),
                 product_id=uuid.uuid4(),
                 release_id=uuid.uuid4(),
+                status=BuildStatus.COMPLETED,
                 signature="abc123",
                 created=True,
                 traceability_incomplete=True,
             )
         )
-        worker = HydrationWorker(MagicMock(), processor)
+        resources = MagicMock()
+        resources.publisher.publish_notification_request = AsyncMock(return_value=None)
+        worker = HydrationWorker(resources, processor)
         message = _FakeMessage(_valid_payload_bytes())
 
         await worker._handle_message(message)
 
         processor.process.assert_awaited_once()
+        resources.publisher.publish_notification_request.assert_awaited_once()
         payload = processor.process.await_args.args[0]
         assert payload.build_id == "260330"
         assert payload.product_id == "s32-design-studio"
@@ -85,4 +90,44 @@ class TestHydrationWorker:
             await worker._handle_message(message)
 
         processor.process.assert_not_awaited()
+        assert message.requeue is False
+
+
+class TestNotificationWorker:
+    """Notification queue consumer must deserialize internal request messages."""
+
+    @pytest.mark.asyncio
+    async def test_handle_message_processes_valid_notification_request(self) -> None:
+        orchestrator = MagicMock()
+        orchestrator.process_request = AsyncMock(return_value=None)
+        worker = NotificationWorker(orchestrator)
+        message = _FakeMessage(
+            (
+                "{"
+                f'"manifest_id":"{uuid.uuid4()}",'
+                '"build_id":"260330",'
+                '"product_id":"s32-design-studio",'
+                '"event_type":"build_completed",'
+                f'"triggered_at":"{datetime.now(tz=UTC).isoformat()}",'
+                '"trigger_source":"hydration_worker"'
+                "}"
+            ).encode()
+        )
+
+        await worker._handle_message(message)
+
+        orchestrator.process_request.assert_awaited_once()
+        assert message.requeue is False
+
+    @pytest.mark.asyncio
+    async def test_handle_message_rejects_invalid_notification_request(self) -> None:
+        orchestrator = MagicMock()
+        orchestrator.process_request = AsyncMock(return_value=None)
+        worker = NotificationWorker(orchestrator)
+        message = _FakeMessage(b'{"build_id":"broken"}')
+
+        with pytest.raises(ValidationError):
+            await worker._handle_message(message)
+
+        orchestrator.process_request.assert_not_awaited()
         assert message.requeue is False

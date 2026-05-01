@@ -13,16 +13,13 @@ import logging
 import time
 import uuid
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast
 
 import redis.asyncio as aioredis
 
 logger = logging.getLogger(__name__)
 
-if TYPE_CHECKING:
-    RedisType = aioredis.Redis[Any]
-else:
-    RedisType = aioredis.Redis
+RedisType = aioredis.Redis
 
 _KEY_PREFIX = "ratelimit"
 _WINDOW_SECONDS = 60

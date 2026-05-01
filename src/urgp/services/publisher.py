@@ -20,6 +20,7 @@ from urgp.messaging.topology import (
     ROUTING_KEY_PROCESS,
 )
 from urgp.schemas.ingest import IngestPayload
+from urgp.schemas.notifications import NotificationRequest
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +38,7 @@ class EventPublisher:
         logger.info("EventPublisher connected [instance=%s]", self._gateway_instance_id)
 
     async def publish(self, payload: IngestPayload, ingestion_timestamp: datetime | None = None) -> datetime:
-        """Publish a validated payload to both downstream queues atomically."""
+        """Publish a validated build payload to the processing queue."""
         self._ensure_connected()
         connection = self._connection
         assert connection is not None
@@ -49,30 +50,62 @@ class EventPublisher:
 
         async with connection.channel(publisher_confirms=False) as channel:
             exchange = await channel.get_exchange(EXCHANGE_BUILD_EVENTS)
-            async with channel.transaction():
-                for routing_key in (ROUTING_KEY_PROCESS, ROUTING_KEY_NOTIFY):
-                    await exchange.publish(
-                        self._build_message(
-                            enriched_payload,
-                            message_type="build_event",
-                            timestamp=ingestion_timestamp,
-                            headers={
-                                "build_id": payload.build_id,
-                                "product_id": payload.product_id,
-                                "gateway_instance_id": self._gateway_instance_id,
-                            },
-                        ),
-                        routing_key=routing_key,
-                    )
+            await exchange.publish(
+                self._build_message(
+                    enriched_payload,
+                    message_type="build_event",
+                    timestamp=ingestion_timestamp,
+                    headers={
+                        "build_id": payload.build_id,
+                        "product_id": payload.product_id,
+                        "gateway_instance_id": self._gateway_instance_id,
+                    },
+                ),
+                routing_key=ROUTING_KEY_PROCESS,
+            )
 
         logger.info(
-            "Published build event [build=%s, product=%s] -> [%s, %s]",
+            "Published build event [build=%s, product=%s] -> [%s]",
             payload.build_id,
             payload.product_id,
             ROUTING_KEY_PROCESS,
-            ROUTING_KEY_NOTIFY,
         )
         return ingestion_timestamp
+
+    async def publish_notification_request(self, request: NotificationRequest) -> datetime:
+        """Publish an internal notification request to the notification queue."""
+        self._ensure_connected()
+        connection = self._connection
+        assert connection is not None
+
+        published_at = datetime.now(tz=UTC)
+        async with connection.channel(publisher_confirms=False) as channel:
+            exchange = await channel.get_exchange(EXCHANGE_BUILD_EVENTS)
+            await exchange.publish(
+                self._build_message(
+                    request.model_dump(mode="json"),
+                    message_type="notification_request",
+                    timestamp=published_at,
+                    headers={
+                        "manifest_id": str(request.manifest_id),
+                        "build_id": request.build_id,
+                        "product_id": request.product_id,
+                        "event_type": request.event_type.value,
+                        "gateway_instance_id": self._gateway_instance_id,
+                    },
+                ),
+                routing_key=ROUTING_KEY_NOTIFY,
+            )
+
+        logger.info(
+            "Published notification request [manifest=%s, build=%s, product=%s, event=%s] -> [%s]",
+            request.manifest_id,
+            request.build_id,
+            request.product_id,
+            request.event_type.value,
+            ROUTING_KEY_NOTIFY,
+        )
+        return published_at
 
     async def publish_validation_failure(
         self,

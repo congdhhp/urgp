@@ -108,7 +108,12 @@ class URGPSettings(BaseSettings):
     smtp_from: str = Field(default="urgp@company.com", description="Sender email address")
     smtp_username: str = Field(default="", description="SMTP auth username (empty = no auth)")
     smtp_password: str = Field(default="", description="SMTP auth password")
-    notification_max_retries: int = Field(default=3, ge=1, le=10, description="Max notification delivery retries")
+    notification_max_retries: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        description="Max delivery retries after the initial notification attempt",
+    )
     notification_retry_backoff_seconds: float = Field(
         default=1.5,
         ge=0.1,

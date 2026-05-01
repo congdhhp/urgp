@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import cast
 
@@ -54,6 +55,16 @@ class AmbiguousBuildReferenceError(LookupError):
 
 class ProductNotFoundError(LookupError):
     """Raised when a product cannot be resolved."""
+
+
+@dataclass(frozen=True)
+class BuildStatusTransitionResult:
+    """Lifecycle transition response plus notification context."""
+
+    build: BuildDetailResponse
+    manifest_id: uuid.UUID
+    product_id: str
+    status: BuildStatus
 
 
 def _manifest_load_options() -> tuple[ExecutableOption, ...]:
@@ -487,7 +498,7 @@ class PlatformQueryService:
         payload: BuildStatusTransitionRequest,
         *,
         product_id: str | None = None,
-    ) -> BuildDetailResponse:
+    ) -> BuildStatusTransitionResult:
         async with self._session_factory() as session:
             manifest = await self._resolve_manifest(session, build_ref, product_id=product_id)
             self._lifecycle.transition(manifest, payload.status, allow_noop=False)
@@ -495,7 +506,12 @@ class PlatformQueryService:
             await session.refresh(manifest)
 
         summary = _build_summary(manifest)
-        return BuildDetailResponse(**summary.model_dump(), ci_metadata=manifest.ci_metadata)
+        return BuildStatusTransitionResult(
+            build=BuildDetailResponse(**summary.model_dump(), ci_metadata=manifest.ci_metadata),
+            manifest_id=manifest.id,
+            product_id=manifest.product.external_id,
+            status=manifest.status,
+        )
 
     async def verify_build_integrity(
         self,
@@ -612,6 +628,7 @@ def _try_parse_uuid(value: str) -> uuid.UUID | None:
 __all__ = [
     "AmbiguousBuildReferenceError",
     "BuildNotFoundError",
+    "BuildStatusTransitionResult",
     "PlatformQueryService",
     "ProductNotFoundError",
 ]

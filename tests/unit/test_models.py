@@ -2,7 +2,15 @@
 
 from __future__ import annotations
 
-from urgp.models.enums import ArtifactType, BuildStatus, BuildType, NotificationChannel, UserRole
+from urgp.models.enums import (
+    ArtifactType,
+    BuildStatus,
+    BuildType,
+    NotificationChannel,
+    NotificationDeliveryStatus,
+    NotificationEventType,
+    UserRole,
+)
 
 
 class TestBuildStatusEnum:
@@ -64,6 +72,25 @@ class TestNotificationChannelEnum:
         assert NotificationChannel.EMAIL.value == "email"
         assert NotificationChannel.WEBHOOK.value == "webhook"
         assert len(list(NotificationChannel)) == 2
+
+
+class TestNotificationEventTypeEnum:
+    """Tests for NotificationEventType enum."""
+
+    def test_event_types(self) -> None:
+        assert NotificationEventType.BUILD_COMPLETED.value == "build_completed"
+        assert NotificationEventType.BUILD_RELEASED.value == "build_released"
+        assert len(list(NotificationEventType)) == 2
+
+
+class TestNotificationDeliveryStatusEnum:
+    """Tests for NotificationDeliveryStatus enum."""
+
+    def test_delivery_statuses(self) -> None:
+        assert NotificationDeliveryStatus.PENDING.value == "pending"
+        assert NotificationDeliveryStatus.SENT.value == "sent"
+        assert NotificationDeliveryStatus.FAILED.value == "failed"
+        assert len(list(NotificationDeliveryStatus)) == 3
 
 
 class TestUserRoleEnum:

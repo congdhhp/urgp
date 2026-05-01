@@ -11,7 +11,14 @@ from fastapi.testclient import TestClient
 
 from tests.unit.fakes import FakeRedis
 from urgp.main import create_app
-from urgp.models.enums import ArtifactType, BuildStatus, BuildType, NotificationChannel
+from urgp.models.enums import (
+    ArtifactType,
+    BuildStatus,
+    BuildType,
+    NotificationChannel,
+    NotificationDeliveryStatus,
+    NotificationEventType,
+)
 from urgp.schemas.platform import (
     ActivityResponse,
     ActivityTotalsResponse,
@@ -20,6 +27,8 @@ from urgp.schemas.platform import (
     BuildSummaryResponse,
     BuildVerificationArtifactResponse,
     BuildVerificationResponse,
+    NotificationHistoryItemResponse,
+    NotificationHistoryResponse,
     ProductListResponse,
     ProductSummaryResponse,
     SubscriptionCreateRequest,
@@ -99,13 +108,32 @@ def _subscription_response() -> SubscriptionResponse:
     )
 
 
+def _notification_history_item() -> NotificationHistoryItemResponse:
+    return NotificationHistoryItemResponse(
+        id=uuid.uuid4(),
+        subscription_id=uuid.uuid4(),
+        manifest_id=uuid.uuid4(),
+        build_id="260330",
+        product_id="S32_IDE",
+        product_name="S32 Design Studio",
+        release="3.6.8-RFP",
+        event_type=NotificationEventType.BUILD_COMPLETED,
+        channel=NotificationChannel.EMAIL,
+        recipient="qa@example.com",
+        status=NotificationDeliveryStatus.SENT,
+        attempt_count=1,
+        last_attempt_at=datetime.now(tz=UTC),
+        sent_at=datetime.now(tz=UTC),
+        last_error=None,
+        created_at=datetime.now(tz=UTC),
+        updated_at=datetime.now(tz=UTC),
+    )
+
+
 @pytest.fixture
 def platform_client() -> TestClient:
     settings = _settings()
-    with (
-        patch("urgp.config.get_settings", return_value=settings),
-        patch("urgp.api.notifications.get_settings", return_value=settings),
-    ):
+    with patch("urgp.config.get_settings", return_value=settings):
         app = create_app()
         app.state.redis = FakeRedis()
         app.state.publisher = None
@@ -232,16 +260,31 @@ class TestActivityAndNotificationsApi:
 
     def test_subscription_crud_contracts(self, platform_client: TestClient) -> None:
         subscription = _subscription_response()
+        history_item = _notification_history_item()
 
-        with patch("urgp.api.notifications.NotificationProcessingService") as service_cls:
-            service = service_cls.return_value
-            service.list_subscriptions = AsyncMock(return_value=SubscriptionListResponse(items=[subscription], total=1))
-            service.create_subscription = AsyncMock(return_value=subscription)
-            service.delete_subscription = AsyncMock(return_value=None)
+        with (
+            patch("urgp.api.notifications.SubscriptionService") as subscription_service_cls,
+            patch("urgp.api.notifications.NotificationHistoryService") as history_service_cls,
+        ):
+            subscription_service = subscription_service_cls.return_value
+            history_service = history_service_cls.return_value
+            subscription_service.list_subscriptions = AsyncMock(
+                return_value=SubscriptionListResponse(items=[subscription], total=1)
+            )
+            subscription_service.create_subscription = AsyncMock(return_value=subscription)
+            subscription_service.delete_subscription = AsyncMock(return_value=None)
+            history_service.list_history = AsyncMock(
+                return_value=NotificationHistoryResponse(items=[history_item], total=1)
+            )
 
             list_response = platform_client.get(
                 "/api/v1/notifications/subscriptions",
                 headers={"X-API-Key": _TEST_API_KEY, "X-User-Id": "qa@example.com"},
+            )
+            history_response = platform_client.get(
+                "/api/v1/notifications/history",
+                headers={"X-API-Key": _TEST_API_KEY, "X-User-Id": "qa@example.com"},
+                params={"status": "sent", "limit": 10},
             )
             create_response = platform_client.post(
                 "/api/v1/notifications/subscriptions",
@@ -258,11 +301,12 @@ class TestActivityAndNotificationsApi:
             )
 
         assert list_response.status_code == 200
+        assert history_response.status_code == 200
         assert create_response.status_code == 201
         assert delete_response.status_code == 204
 
     def test_delete_subscription_returns_404_when_missing(self, platform_client: TestClient) -> None:
-        with patch("urgp.api.notifications.NotificationProcessingService") as service_cls:
+        with patch("urgp.api.notifications.SubscriptionService") as service_cls:
             service_cls.return_value.delete_subscription = AsyncMock(side_effect=SubscriptionNotFoundError("missing"))
             response = platform_client.delete(
                 f"/api/v1/notifications/subscriptions/{uuid.uuid4()}",
@@ -271,3 +315,15 @@ class TestActivityAndNotificationsApi:
 
         assert response.status_code == 404
         assert response.json()["detail"] == "missing"
+
+    def test_history_rejects_invalid_status_filter(self, platform_client: TestClient) -> None:
+        with patch("urgp.api.notifications.NotificationHistoryService") as service_cls:
+            service_cls.return_value.list_history = AsyncMock(side_effect=ValueError("bad status"))
+            response = platform_client.get(
+                "/api/v1/notifications/history",
+                headers={"X-API-Key": _TEST_API_KEY, "X-User-Id": "qa@example.com"},
+                params={"status": "bad"},
+            )
+
+        assert response.status_code == 400
+        assert response.json()["detail"] == "bad status"

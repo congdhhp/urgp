@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Annotated, Any, cast
+from typing import Annotated, cast
 
 import redis.asyncio as aioredis
 from fastapi import Depends, HTTPException, Request, status
@@ -15,10 +15,7 @@ from urgp.schemas.responses import RateLimitExceededResponse
 from urgp.services.idempotency import IdempotencyService
 from urgp.services.publisher import EventPublisher
 
-if TYPE_CHECKING:
-    RedisType = aioredis.Redis[Any]
-else:
-    RedisType = aioredis.Redis
+RedisType = aioredis.Redis
 
 
 def _service_unavailable(message: str, *, error: str = "service_unavailable") -> HTTPException:
