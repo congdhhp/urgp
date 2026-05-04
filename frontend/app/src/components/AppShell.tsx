@@ -10,14 +10,17 @@ import {
   ChevronRight,
   GitCompareArrows,
   LogOut,
+  Moon,
   PackageSearch,
   Search,
   Settings,
-  ShieldCheck
+  ShieldCheck,
+  Sun
 } from "lucide-react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../contexts/AuthContext";
+import { useTheme } from "../contexts/ThemeContext";
 
 const { Content, Header, Sider } = Layout;
 
@@ -31,6 +34,7 @@ const navItems = [
 
 export function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
+  const { theme, toggleTheme } = useTheme();
   const [query, setQuery] = useState("");
   const [searchType, setSearchType] = useState("build");
   const location = useLocation();
@@ -144,6 +148,11 @@ export function AppShell() {
             </div>
           </Space>
           <Space size={12}>
+            <Tooltip title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}>
+              <button className="icon-link" onClick={toggleTheme} aria-label="Toggle theme" type="button">
+                {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+              </button>
+            </Tooltip>
             <Tooltip title="Notification settings">
               <Link to="/settings" className="icon-link" aria-label="Notification settings">
                 <Bell size={16} />
