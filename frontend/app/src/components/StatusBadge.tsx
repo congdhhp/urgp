@@ -1,9 +1,19 @@
-import { Tag, Tooltip } from "antd";
+import { Tooltip } from "antd";
 
-import { buildStatusTone, titleize } from "../lib/format";
 import type { BuildStatus } from "../types";
 
-const statusCopy: Record<BuildStatus, string> = {
+const PULSE_STATES = new Set(["ingesting", "hydrating", "testing"]);
+
+const STATUS_LABELS: Record<string, string> = {
+  ingesting: "Ingesting",
+  hydrating: "Hydrating",
+  completed: "Completed",
+  testing: "Testing",
+  released: "Released",
+  deprecated: "Deprecated"
+};
+
+const STATUS_TOOLTIPS: Record<BuildStatus, string> = {
   ingesting: "Manifest accepted and waiting for processing.",
   hydrating: "Traceability hydration is in progress.",
   completed: "Build is complete and ready for QA intake.",
@@ -13,9 +23,22 @@ const statusCopy: Record<BuildStatus, string> = {
 };
 
 export function StatusBadge({ status }: { status: BuildStatus | string | null | undefined }) {
-  if (!status) {
-    return <Tag>N/A</Tag>;
+  const key = status ?? "";
+  const label = STATUS_LABELS[key] ?? (key ? key.charAt(0).toUpperCase() + key.slice(1) : "N/A");
+  const isPulsing = PULSE_STATES.has(key);
+
+  const badge = (
+    <span
+      className={`status-badge status-badge--${key || "deprecated"}${isPulsing ? " status-badge--pulse" : ""}`}
+    >
+      <span className="status-badge__dot" />
+      {label}
+    </span>
+  );
+
+  if (!key || !(key in STATUS_TOOLTIPS)) {
+    return badge;
   }
-  const content = <Tag color={buildStatusTone(status)}>{titleize(status)}</Tag>;
-  return status in statusCopy ? <Tooltip title={statusCopy[status as BuildStatus]}>{content}</Tooltip> : content;
+
+  return <Tooltip title={STATUS_TOOLTIPS[key as BuildStatus]}>{badge}</Tooltip>;
 }
