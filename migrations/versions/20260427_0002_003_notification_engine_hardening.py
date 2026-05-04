@@ -1,6 +1,6 @@
 """Notification engine hardening for evented delivery history.
 
-Revision ID: 003_notification_engine_hardening
+Revision ID: 003_notif_hardening
 Revises: 002_control_plane_identity
 Create Date: 2026-04-27
 """
@@ -14,7 +14,7 @@ from alembic import op
 from sqlalchemy.dialects.postgresql import UUID
 
 # revision identifiers
-revision: str = "003_notification_engine_hardening"
+revision: str = "003_notif_hardening"
 down_revision: str | None = "002_control_plane_identity"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None

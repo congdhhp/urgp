@@ -210,3 +210,11 @@ __marimo__/
 # URGP CLI
 urgp-fallback-*.json
 !urgp-cli.spec
+
+# Frontend
+node_modules/
+.vite/
+.vitest/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
