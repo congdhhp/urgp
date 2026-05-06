@@ -1877,6 +1877,20 @@ pytest = ">=6.2.5"
 testing = ["fields", "hunter", "process-tests", "pytest-xdist", "virtualenv"]
 
 [[package]]
+name = "pytest-timeout"
+version = "2.4.0"
+description = "pytest plugin to abort hanging tests"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "pytest_timeout-2.4.0-py3-none-any.whl", hash = "sha256:c42667e5cdadb151aeb5b26d114aff6bdf5a907f176a007a30b940d3d865b5c2"},
+    {file = "pytest_timeout-2.4.0.tar.gz", hash = "sha256:7e68e90b01f9eff71332b25001f85c75495fc4e3a836701876183c4bcfd0540a"},
+]
+
+[package.dependencies]
+pytest = ">=7.0.0"
+
+[[package]]
 name = "python-discovery"
 version = "1.2.2"
 description = "Python interpreter discovery"
@@ -2755,4 +2769,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "a02e3a5d1cb7d43a330a29dab2c4cc3c3b743f535d6d2a9f9f54c2ebb782e3d1"
+content-hash = "771f42b1f0a8a1e049f32f3ff3ef547630c17aaa06405018e452f7585eb7922b"

@@ -1,4 +1,4 @@
-.PHONY: up down logs shell test migrate lint format type-check clean seed help
+.PHONY: up down logs shell test migrate lint format type-check clean seed help test-e2e test-perf test-all
 
 # ─────────────────────────────────────────────
 # Docker Compose
@@ -42,6 +42,15 @@ test-unit: ## Run unit tests only
 
 test-integration: ## Run integration tests only (requires docker compose up)
 	poetry run pytest tests/integration/ -v -m integration
+
+test-e2e: ## Run E2E pipeline tests (requires docker compose up)
+	poetry run pytest tests/integration/test_e2e_pipeline.py tests/integration/test_data_accuracy.py -v -m integration --timeout=60
+
+test-perf: ## Run performance benchmarks (requires docker compose up)
+	poetry run pytest tests/integration/test_performance.py -v -m slow --timeout=120 -s
+
+test-all: ## Run unit + integration tests
+	poetry run pytest tests/ -v --timeout=60
 
 # ─────────────────────────────────────────────
 # Code Quality

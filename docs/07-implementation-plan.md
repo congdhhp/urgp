@@ -482,40 +482,45 @@ This implementation plan breaks down the URGP platform into **3 delivery phases*
 
 ### P1-7: End-to-End Integration & MVP Validation `[Week 10-12]`
 
-- [ ] P1-7.1 End-to-end integration test
+- [x] P1-7.1 End-to-end integration test
   - Complete flow: `urgp-cli push` → Event Gateway → Build Manifest → Traceability Hydration → Portal display → Notification delivery
   - Test with real S32 package artifacts (or realistic mocks)
   - Validate: CLI → API → DB → Portal shows correct data
   - **Deliverable:** Full pipeline works end-to-end in Docker Compose environment
   - _Requirements: All P1 requirements_
+  - _Implementation: `tests/integration/test_e2e_pipeline.py` (~25 test cases)_
 
-- [ ] P1-7.2 Data accuracy validation
+- [x] P1-7.2 Data accuracy validation
   - Compare URGP traceability data with legacy Email "What's New" content for 5 real builds
   - Verify: all Jira issues from Email appear in Portal (≥ 90% match rate)
   - Verify: SHA-256 checksums match for all artifacts
   - **Deliverable:** Data accuracy report confirming URGP matches legacy system
   - _Migration strategy: Phase 0 exit criteria_
+  - _Implementation: `tests/integration/test_data_accuracy.py` (checksum + traceability validation)_
 
-- [ ] P1-7.3 Performance validation
+- [x] P1-7.3 Performance validation
   - API response times: p95 < 500ms for list queries, < 200ms for single-entity queries
   - Graph hydration time: < 30 seconds for builds with 100 commits
   - Portal page load: < 2 seconds initial load, < 1 second manifest page
   - **Deliverable:** Performance report meeting Phase 1 SLAs
   - _Requirements: R15.1-R15.5_
+  - _Implementation: `tests/integration/test_performance.py` (6 benchmark suites)_
 
-- [ ] P1-7.4 Create user documentation
+- [x] P1-7.4 Create user documentation
   - CLI usage guide with Jenkins integration examples
   - Portal user guide with screenshots
   - Product setup guide (Git/Jira configuration)
   - Notification configuration guide
   - **Deliverable:** Documentation sufficient for S32 team self-onboarding
   - _Requirements: R19.4_
+  - _Implementation: `docs/guides/` (4 comprehensive guides)_
 
 - [ ] P1-7.5 Begin Migration Phase 0 (Shadow Mode)
   - Add `urgp-cli push` to S32 Jenkins pipelines (non-blocking: `urgp-cli push ... --timeout 30 || true`)
   - Monitor data collection for 2-4 weeks
   - See [Migration Strategy](06-migration-strategy.md) for exit criteria
   - **Deliverable:** URGP collecting real S32 build data in parallel with legacy system
+
 
 ### P1-8: Stabilization Buffer `[Week 13-14]`
 
