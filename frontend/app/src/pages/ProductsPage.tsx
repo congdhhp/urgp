@@ -10,7 +10,7 @@ import { MetricCard } from "../components/MetricCard";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
 import { createProduct } from "../lib/api";
-import { formatDateShort, percent } from "../lib/format";
+import { formatDateShort } from "../lib/format";
 import { useActivity, useBuilds, useProducts } from "../hooks/usePlatformQueries";
 import type { BuildSummary, ProductCreateRequest, ProductSummary } from "../types";
 
@@ -27,7 +27,7 @@ export function ProductsPage() {
   const createMutation = useMutation({
     mutationFn: createProduct,
     onSuccess: async (product) => {
-      message.success(`Product ${product.name} is ready.`);
+      message.success(`Product "${product.name}" created successfully.`);
       setModalOpen(false);
       form.resetFields();
       await queryClient.invalidateQueries({ queryKey: ["products"] });
@@ -48,7 +48,9 @@ export function ProductsPage() {
     );
   }, [products, search]);
 
-  const releasedRate = totals ? percent(totals.released_builds, totals.builds) : 0;
+  const releasedBuilds = totals?.released_builds ?? 0;
+  const totalBuilds = totals?.builds ?? 0;
+  const releasedRate = totalBuilds > 0 ? Math.round((releasedBuilds / totalBuilds) * 100) : 0;
 
   const columns: ColumnsType<BuildSummary> = [
     {
@@ -86,7 +88,7 @@ export function ProductsPage() {
       <section className="metric-grid">
         <MetricCard label="Products" value={totals?.products ?? products.length} note="Onboarded lines" icon={Box} />
         <MetricCard label="Builds" value={totals?.builds ?? 0} note="Manifest records" icon={Activity} tone="green" />
-        <MetricCard label="Released" value={`${releasedRate}%`} note={`${totals?.released_builds ?? 0} immutable`} icon={CheckCircle2} tone="amber" />
+        <MetricCard label="Released" value={`${releasedRate}%`} note={`${releasedBuilds} immutable`} icon={CheckCircle2} tone="amber" />
         <MetricCard label="Incomplete" value={totals?.incomplete_builds ?? 0} note="Need hydration review" icon={ShieldAlert} tone="red" />
       </section>
 

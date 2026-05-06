@@ -284,9 +284,11 @@ a {
   display: inline-grid;
   place-items: center;
   color: var(--text-muted);
+  background: none;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   transition: all 0.15s ease;
+  cursor: pointer;
 }
 
 .icon-link:hover {
@@ -600,6 +602,10 @@ a {
   background: #f8f9ff !important;
 }
 
+[data-theme="dark"] .ant-table-wrapper .ant-table-tbody > tr:hover > td {
+  background: #1c1c20 !important;
+}
+
 .ant-table-wrapper .ant-table-tbody > tr:last-child > td {
   border-bottom: 0 !important;
 }
@@ -616,6 +622,10 @@ a {
   box-shadow: var(--shadow-md) !important;
   transform: translateY(-2px);
   border-color: #c7d2fe !important;
+}
+
+[data-theme="dark"] .ant-card.ant-card-hoverable:hover {
+  border-color: rgba(99, 102, 241, 0.35) !important;
 }
 
 /* Buttons */

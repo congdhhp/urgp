@@ -116,20 +116,20 @@ def upgrade() -> None:
         """
         UPDATE notifications n
         SET subscription_id = ns.id
-        FROM build_manifests bm
-        JOIN notification_subscriptions ns
-          ON ns.product_id = bm.product_id
-         AND ns.release_id IS NOT DISTINCT FROM bm.release_id
-         AND ns.channel = n.channel
-         AND ns.user_id = CASE
+        FROM build_manifests bm,
+             notification_subscriptions ns
+        WHERE bm.id = n.manifest_id
+          AND ns.product_id = bm.product_id
+          AND ns.release_id IS NOT DISTINCT FROM bm.release_id
+          AND ns.channel = n.channel
+          AND ns.user_id = CASE
                 WHEN n.channel = 'email' THEN n.recipient_snapshot
                 ELSE 'legacy:webhook:' || md5(n.recipient_snapshot)
             END
-         AND ns.webhook_url IS NOT DISTINCT FROM CASE
+          AND ns.webhook_url IS NOT DISTINCT FROM CASE
                 WHEN n.channel = 'webhook' THEN n.recipient_snapshot
                 ELSE NULL
             END
-        WHERE bm.id = n.manifest_id
           AND n.subscription_id IS NULL
         """
     )

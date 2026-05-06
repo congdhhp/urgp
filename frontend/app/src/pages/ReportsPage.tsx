@@ -62,7 +62,7 @@ export function ReportsPage() {
               Released builds
             </span>
             <span>
-              <strong>{percent(released, builds.length)}%</strong>
+              <strong>{percent(released, builds.length)}</strong>
               Release ratio
             </span>
             <span>

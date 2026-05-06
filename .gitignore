@@ -14,8 +14,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -213,6 +213,7 @@ urgp-fallback-*.json
 
 # Frontend
 node_modules/
+!frontend/app/src/lib/
 .vite/
 .vitest/
 npm-debug.log*
