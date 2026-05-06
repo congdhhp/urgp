@@ -14,8 +14,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -210,3 +210,12 @@ __marimo__/
 # URGP CLI
 urgp-fallback-*.json
 !urgp-cli.spec
+
+# Frontend
+node_modules/
+!frontend/app/src/lib/
+.vite/
+.vitest/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
