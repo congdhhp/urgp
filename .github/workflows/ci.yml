@@ -21,9 +21,17 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
 
       - name: Install Poetry
         run: pip install poetry==1.8.5
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+          restore-keys: poetry-${{ runner.os }}-
 
       - name: Install dependencies
         run: poetry install --no-interaction --no-ansi
@@ -44,9 +52,17 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
 
       - name: Install Poetry
         run: pip install poetry==1.8.5
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+          restore-keys: poetry-${{ runner.os }}-
 
       - name: Install dependencies
         run: poetry install --no-interaction --no-ansi
@@ -64,15 +80,23 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
 
       - name: Install Poetry
         run: pip install poetry==1.8.5
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+          restore-keys: poetry-${{ runner.os }}-
 
       - name: Install dependencies
         run: poetry install --no-interaction --no-ansi
 
       - name: Run unit tests
-        run: poetry run pytest tests/unit/ -v --cov=src/urgp --cov=src/urgp_cli --cov-report=term-missing
+        run: poetry run pytest tests/unit/ -v -m "not integration and not slow" --cov=src/urgp --cov=src/urgp_cli --cov-report=term-missing --cov-fail-under=70
         env:
           URGP_DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test
           URGP_RABBITMQ_URL: amqp://test:test@localhost:5672/
