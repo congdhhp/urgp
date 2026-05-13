@@ -88,7 +88,7 @@ Release train: 3.6.8-RFP
 Build type: nightly
 Changes: 15 commits, 8 pull requests, 5 issues
 Traceability incomplete: no
-Portal: https://urgp.example.com/portal/?build=260330&product=S32_IDE
+Portal: https://urgp.example.com/?build=260330&product=S32_IDE
 ```
 
 ### Webhook Payload
@@ -117,7 +117,7 @@ Webhook notifications deliver a structured JSON payload via HTTP POST:
     "incomplete": false
   },
   "links": {
-    "portal": "https://urgp.example.com/portal/?build=260330&product=S32_IDE"
+    "portal": "https://urgp.example.com/?build=260330&product=S32_IDE"
   }
 }
 ```

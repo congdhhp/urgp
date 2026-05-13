@@ -213,7 +213,7 @@ urgp-fallback-*.json
 
 # Frontend
 node_modules/
-!frontend/app/src/lib/
+!frontend/portal/src/lib/
 .vite/
 .vitest/
 npm-debug.log*

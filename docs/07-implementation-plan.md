@@ -60,15 +60,15 @@ This implementation plan breaks down the URGP platform into **3 delivery phases*
 
 - [ ] P1-1.1 Initialize Python project with Poetry
   - Create project structure as defined in [05-technical-design.md § Project Structure](05-technical-design.md#project-structure)
-  - Directory layout: `src/urgp/`, `src/urgp_cli/`, `portal/`, `tests/`, `migrations/`, `config/`, `deploy/`, `docs/`
+  - Directory layout: `frontend/portal/`, `frontend/designs/`, `backend/src/urgp/`, `backend/tests/`, `backend/migrations/`, `backend/config/`, `cli/src/urgp_cli/`, `cli/tests/`, `deploy/`, `docs/`
   - Configure Python 3.11+ with type hints enforcement (mypy strict mode)
   - Set up pre-commit hooks (black, ruff, mypy)
   - **Deliverable:** `pyproject.toml`, project skeleton, CI linting passes
   - _Requirements: R20.1, R20.2_
 
 - [ ] P1-1.2 Create Docker Compose development environment
-  - Define `docker-compose.yml` with services: `urgp-api`, `urgp-worker`, `postgres`, `rabbitmq`, `redis`, `mailhog`
-  - Create `Dockerfile` for API + Worker (multi-stage build)
+  - Define `deploy/docker-compose.yml` with services: `urgp-api`, `urgp-worker`, `postgres`, `rabbitmq`, `redis`, `mailhog`
+  - Create `deploy/Dockerfile.backend` for API + Worker (multi-stage build)
   - Create `.env.example` with all configuration variables
   - Add `Makefile` with targets: `up`, `down`, `logs`, `shell`, `test`, `migrate`
   - **Deliverable:** `docker compose up` starts full environment in < 60 seconds
@@ -488,7 +488,7 @@ This implementation plan breaks down the URGP platform into **3 delivery phases*
   - Validate: CLI → API → DB → Portal shows correct data
   - **Deliverable:** Full pipeline works end-to-end in Docker Compose environment
   - _Requirements: All P1 requirements_
-  - _Implementation: `tests/integration/test_e2e_pipeline.py` (~25 test cases)_
+  - _Implementation: `backend/tests/integration/test_e2e_pipeline.py` (~25 test cases)_
 
 - [x] P1-7.2 Data accuracy validation
   - Compare URGP traceability data with legacy Email "What's New" content for 5 real builds
@@ -496,7 +496,7 @@ This implementation plan breaks down the URGP platform into **3 delivery phases*
   - Verify: SHA-256 checksums match for all artifacts
   - **Deliverable:** Data accuracy report confirming URGP matches legacy system
   - _Migration strategy: Phase 0 exit criteria_
-  - _Implementation: `tests/integration/test_data_accuracy.py` (checksum + traceability validation)_
+  - _Implementation: `backend/tests/integration/test_data_accuracy.py` (checksum + traceability validation)_
 
 - [x] P1-7.3 Performance validation
   - API response times: p95 < 500ms for list queries, < 200ms for single-entity queries
@@ -504,7 +504,7 @@ This implementation plan breaks down the URGP platform into **3 delivery phases*
   - Portal page load: < 2 seconds initial load, < 1 second manifest page
   - **Deliverable:** Performance report meeting Phase 1 SLAs
   - _Requirements: R15.1-R15.5_
-  - _Implementation: `tests/integration/test_performance.py` (6 benchmark suites)_
+  - _Implementation: `backend/tests/integration/test_performance.py` (6 benchmark suites)_
 
 - [x] P1-7.4 Create user documentation
   - CLI usage guide with Jenkins integration examples
@@ -530,12 +530,12 @@ This implementation plan breaks down the URGP platform into **3 delivery phases*
   - poetry.lock sync issue resolved (P1-7 CI fix)
   - No functional blockers discovered
 - [x] P1-8.2 Performance tuning (if SLAs not met)
-  - SLA benchmarks defined in `tests/integration/test_performance.py`
+  - SLA benchmarks defined in `backend/tests/integration/test_performance.py`
   - No tuning required — within acceptable thresholds on local Docker
 - [x] P1-8.3 Phase 1 Definition of Done checklist:
   - [x] All P1 tests pass (CI green) — 281+ unit tests, 5 CI jobs
   - [x] User documentation complete — 4 guides in `docs/guides/`
-  - [x] Security review: consolidated audit in `tests/unit/test_security_audit.py`
+  - [x] Security review: consolidated audit in `backend/tests/unit/test_security_audit.py`
   - [x] Performance benchmarks defined — 6 SLA suites
   - [x] Formal DoD document: `docs/phase1-dod.md`
 

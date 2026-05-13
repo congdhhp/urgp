@@ -989,110 +989,57 @@ class URGPSettings(BaseSettings):
 
 ## Project Structure
 
-```
+```text
 urgp/
-├── docker-compose.yml              # Full dev environment
-├── docker-compose.override.yml     # Local overrides
-├── Dockerfile                       # API + Worker image
-├── Dockerfile.portal                # Portal image
-├── pyproject.toml                   # Python dependencies (Poetry)
-├── alembic.ini                      # Database migrations config
-├── .env.example                     # Configuration template
-│
-├── src/
-│   ├── urgp/                        # Python package
-│   │   ├── __init__.py
-│   │   ├── main.py                  # FastAPI app entry point
-│   │   ├── config.py                # Pydantic settings
-│   │   ├── models/                  # SQLAlchemy + Pydantic models
-│   │   │   ├── tenant.py
-│   │   │   ├── product.py
-│   │   │   ├── manifest.py
-│   │   │   ├── artifact.py
-│   │   │   ├── traceability.py
-│   │   │   └── notification.py
-│   │   ├── api/                     # FastAPI routers
-│   │   │   ├── ingest.py            # POST /api/v1/ingest
-│   │   │   ├── builds.py            # Build manifest CRUD
-│   │   │   ├── products.py          # Product management
-│   │   │   ├── notifications.py     # Notification subscriptions
-│   │   │   └── health.py            # Health checks
-│   │   ├── services/                # Business logic
-│   │   │   ├── manifest_service.py
-│   │   │   ├── hydrator.py          # Traceability Hydrator
-│   │   │   ├── immutability.py      # Immutability Controller
-│   │   │   ├── notification.py      # Notification Engine
-│   │   │   └── comparison.py        # Build comparison
-│   │   ├── integrations/            # External API adapters
-│   │   │   ├── git/
-│   │   │   │   ├── base.py          # GitProvider ABC
-│   │   │   │   ├── github.py
-│   │   │   │   ├── gitlab.py
-│   │   │   │   └── bitbucket.py
-│   │   │   └── issues/
-│   │   │       ├── base.py          # IssueTracker ABC
-│   │   │       ├── jira.py
-│   │   │       └── azure_devops.py
-│   │   ├── middleware/
-│   │   │   ├── auth.py              # JWT + API Key validation
-│   │   │   ├── rate_limit.py        # Sliding window rate limiter
-│   │   │   └── tenant_context.py    # Tenant injection (P2)
-│   │   └── worker/
-│   │       └── hydration_worker.py  # RabbitMQ consumer
-│   │
-│   └── urgp_cli/                    # CLI package (separate distribution)
-│       ├── __init__.py
-│       ├── main.py                  # CLI entry point (Typer)
-│       ├── adapters/
-│       │   ├── base.py              # BaseAdapter ABC
-│       │   ├── generic.py
-│       │   └── eclipse_p2.py
-│       └── client.py                # HTTPS client with retry
-│
-├── portal/                          # React frontend
-│   ├── package.json
-│   ├── vite.config.ts
-│   ├── tsconfig.json
-│   ├── src/
-│   │   ├── App.tsx
-│   │   ├── main.tsx
-│   │   ├── api/                     # API client (Axios + TanStack Query hooks)
-│   │   ├── components/              # Shared UI components
-│   │   ├── pages/                   # Page components
-│   │   │   ├── ProductsCatalog.tsx
-│   │   │   ├── ProductReleases.tsx
-│   │   │   ├── ReleaseBuilds.tsx
-│   │   │   ├── BuildDetailPackages.tsx
-│   │   │   ├── BuildDetailWhatsNew.tsx
-│   │   │   ├── PackageDetail.tsx
-│   │   │   ├── PackageCicd.tsx
-│   │   │   ├── BuildComparisonIssues.tsx
-│   │   │   ├── BuildComparisonPrs.tsx
-│   │   │   ├── ActivityFeed.tsx
-│   │   │   └── NotificationSettings.tsx
-│   │   └── types/                   # TypeScript interfaces
-│   └── public/
-│
-├── migrations/                      # Alembic database migrations
-│   └── versions/
-│
-├── tests/
-│   ├── unit/
-│   ├── integration/
-│   └── fixtures/                    # Sample data for testing
-│
-├── config/
-│   ├── dev.yaml
-│   ├── staging.yaml
-│   └── production.yaml
-│
-├── deploy/                          # Deployment manifests
-│   ├── helm/                        # Helm chart
-│   └── docker/                      # Additional Docker configs
-│
-└── docs/
-    ├── quickstart.md
-    ├── cli-guide.md
-    ├── adapter-development.md
-    └── api-reference.md             # Auto-generated from OpenAPI
++-- frontend/
+|   +-- portal/                         # React + Vite self-service portal
+|   |   +-- package.json
+|   |   +-- vite.config.ts
+|   |   +-- src/
+|   +-- designs/                        # UI mockups and visual references
+|
++-- backend/
+|   +-- pyproject.toml                  # Backend dependencies and tooling
+|   +-- alembic.ini                     # Database migration config
+|   +-- .env.example                    # Backend configuration template
+|   +-- src/
+|   |   +-- urgp/                       # FastAPI API, worker, domain services
+|   |       +-- main.py                 # FastAPI app entry point
+|   |       +-- config.py               # Pydantic settings
+|   |       +-- api/                    # FastAPI routers
+|   |       +-- db/                     # SQLAlchemy session and seed data
+|   |       +-- integrations/           # Git and issue tracker adapters
+|   |       +-- messaging/              # RabbitMQ connection and topology
+|   |       +-- middleware/             # Auth, rate limiting, request IDs
+|   |       +-- models/                 # SQLAlchemy models
+|   |       +-- schemas/                # API/data contract schemas
+|   |       +-- services/               # Business logic
+|   |       +-- worker/                 # Background consumers
+|   +-- migrations/                     # Alembic database migrations
+|   +-- config/                         # Environment config templates
+|   +-- tests/                          # Backend unit/integration tests
+|
++-- cli/
+|   +-- pyproject.toml                  # CLI dependencies and tooling
+|   +-- urgp-cli.spec                   # PyInstaller spec
+|   +-- scripts/
+|   |   +-- build_cli.py                # CLI binary build helper
+|   +-- src/
+|   |   +-- urgp_cli/                   # Typer CLI package
+|   |       +-- main.py                 # CLI entry point
+|   |       +-- adapters/               # Artifact adapters
+|   |       +-- commands/               # push/verify commands
+|   |       +-- contracts/              # Data contract models
+|   |       +-- transport/              # API client
+|   +-- tests/                          # CLI tests
+|
++-- deploy/
+|   +-- docker-compose.yml              # Full local dev environment
+|   +-- Dockerfile.backend              # API + worker image
+|   +-- Dockerfile.portal               # Portal image
+|   +-- nginx.portal.conf               # Portal reverse proxy config
+|
++-- docs/                               # Architecture and usage docs
++-- Makefile                            # Root workflow shortcuts
++-- README.md
 ```

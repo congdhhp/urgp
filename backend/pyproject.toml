@@ -1,0 +1,114 @@
+[tool.poetry]
+name = "urgp-backend"
+version = "0.1.0"
+description = "URGP backend API, worker, and control-plane services"
+authors = ["URGP Team"]
+license = "MIT"
+packages = [
+    { include = "urgp", from = "src" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+# Web Framework
+fastapi = "^0.115.0"
+uvicorn = { version = "^0.34.0", extras = ["standard"] }
+
+# Database
+sqlalchemy = { version = "^2.0.0", extras = ["asyncio"] }
+asyncpg = "^0.30.0"
+alembic = "^1.14.0"
+
+# Configuration
+pydantic = "^2.10.0"
+pydantic-settings = "^2.7.0"
+pyyaml = "^6.0.0"
+
+# Message Broker
+aio-pika = "^9.5.0"
+
+# Cache
+redis = { version = "^5.2.0", extras = ["hiredis"] }
+
+# HTTP Client
+httpx = "^0.28.0"
+
+# Logging
+structlog = "^24.4.0"
+
+# Utilities
+python-multipart = "^0.0.18"
+python-jose = { version = "^3.3.0", extras = ["cryptography"] }
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.0"
+pytest-asyncio = "^0.25.0"
+pytest-cov = "^6.0.0"
+pytest-timeout = "^2.3.0"
+ruff = ">=0.9.0,<1.0"
+mypy = "^1.14.0"
+pre-commit = "^4.0.0"
+types-pyyaml = "^6.0.0"
+types-redis = "^4.6.0"
+
+[tool.poetry.scripts]
+urgp-api = "urgp.main:run"
+urgp-worker = "urgp.worker.hydration_worker:run"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["aio_pika.*", "asyncpg.*"]
+ignore_missing_imports = true
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "W",
+    "F",
+    "I",
+    "N",
+    "UP",
+    "B",
+    "SIM",
+    "TCH",
+    "RUF",
+]
+ignore = [
+    "E501",
+    "B008",
+    "SIM117",
+    "TCH001",
+    "TCH002",
+    "TCH003",
+    "RUF022",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["urgp"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-v --strict-markers"
+markers = [
+    "integration: marks tests requiring running services (docker compose)",
+    "slow: marks tests that take a long time to run",
+]

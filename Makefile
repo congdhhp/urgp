@@ -1,88 +1,87 @@
-.PHONY: up down logs shell test migrate lint format type-check clean seed help test-e2e test-perf test-all
+.PHONY: help up down logs shell migrate migrate-down migrate-reset seed install test test-backend test-cli test-frontend test-integration test-e2e test-perf test-all lint format type-check check build-images clean
 
-# ─────────────────────────────────────────────
-# Docker Compose
-# ─────────────────────────────────────────────
+COMPOSE := docker compose -f deploy/docker-compose.yml
+
+help: ## Show this help
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+
 up: ## Start all services
-	docker compose up -d
+	$(COMPOSE) up -d
 
 down: ## Stop all services
-	docker compose down
+	$(COMPOSE) down
 
 logs: ## Tail logs from all services
-	docker compose logs -f
+	$(COMPOSE) logs -f
 
 shell: ## Open shell in urgp-api container
-	docker compose exec urgp-api bash
+	$(COMPOSE) exec urgp-api bash
 
-# ─────────────────────────────────────────────
-# Database
-# ─────────────────────────────────────────────
-migrate: ## Run database migrations (upgrade to head)
-	docker compose exec urgp-api alembic upgrade head
+migrate: ## Run database migrations
+	$(COMPOSE) exec urgp-api alembic upgrade head
 
-migrate-down: ## Rollback last migration
-	docker compose exec urgp-api alembic downgrade -1
+migrate-down: ## Roll back last migration
+	$(COMPOSE) exec urgp-api alembic downgrade -1
 
-migrate-reset: ## Reset database (downgrade to base, then upgrade)
-	docker compose exec urgp-api alembic downgrade base
-	docker compose exec urgp-api alembic upgrade head
+migrate-reset: ## Reset database migrations
+	$(COMPOSE) exec urgp-api alembic downgrade base
+	$(COMPOSE) exec urgp-api alembic upgrade head
 
-seed: ## Seed database with sample data
-	docker compose exec urgp-api python -m urgp.db.seed
+seed: ## Seed sample data
+	$(COMPOSE) exec urgp-api python -m urgp.db.seed
 
-# ─────────────────────────────────────────────
-# Testing
-# ─────────────────────────────────────────────
-test: ## Run all tests
-	poetry run pytest tests/ -v --cov=src/urgp --cov-report=term-missing
+install: ## Install backend, CLI, and frontend dependencies
+	cd backend && poetry install
+	cd cli && poetry install
+	cd frontend/portal && npm ci
 
-test-unit: ## Run unit tests only
-	poetry run pytest tests/unit/ -v
+test: test-backend test-cli test-frontend ## Run backend, CLI, and frontend tests
 
-test-integration: ## Run integration tests only (requires docker compose up)
-	poetry run pytest tests/integration/ -v -m integration
+test-backend: ## Run backend unit tests
+	cd backend && poetry run pytest tests/unit/ -v --cov=src/urgp --cov-report=term-missing
 
-test-e2e: ## Run E2E pipeline tests (requires docker compose up)
-	poetry run pytest tests/integration/test_e2e_pipeline.py tests/integration/test_data_accuracy.py -v -m integration --timeout=60
+test-cli: ## Run CLI unit tests
+	cd cli && poetry run pytest tests/ -v --cov=src/urgp_cli --cov-report=term-missing
 
-test-perf: ## Run performance benchmarks (requires docker compose up)
-	poetry run pytest tests/integration/test_performance.py -v -m slow --timeout=120 -s
+test-frontend: ## Run frontend tests
+	cd frontend/portal && npm run test
 
-test-all: ## Run unit + integration tests
-	poetry run pytest tests/ -v --timeout=60
+test-integration: ## Run backend integration tests
+	cd backend && poetry run pytest tests/integration/ -v -m integration
 
-# ─────────────────────────────────────────────
-# Code Quality
-# ─────────────────────────────────────────────
-lint: ## Run linter (ruff)
-	poetry run ruff check .
+test-e2e: ## Run backend E2E pipeline tests
+	cd backend && poetry run pytest tests/integration/test_e2e_pipeline.py tests/integration/test_data_accuracy.py -v -m integration --timeout=60
 
-format: ## Format code (ruff)
-	poetry run ruff format .
+test-perf: ## Run backend performance tests
+	cd backend && poetry run pytest tests/integration/test_performance.py -v -m slow --timeout=120 -s
 
-type-check: ## Run type checker (mypy)
-	poetry run mypy src/
+test-all: ## Run all backend and CLI tests
+	cd backend && poetry run pytest tests/ -v --timeout=60
+	cd cli && poetry run pytest tests/ -v
 
-check: lint type-check test-unit ## Run all checks (lint + type-check + unit tests)
+lint: ## Run backend and CLI linters
+	cd backend && poetry run ruff check .
+	cd cli && poetry run ruff check .
 
-# ─────────────────────────────────────────────
-# Utilities
-# ─────────────────────────────────────────────
-clean: ## Remove build artifacts, caches
+format: ## Format backend and CLI code
+	cd backend && poetry run ruff format .
+	cd cli && poetry run ruff format .
+
+type-check: ## Run backend and CLI type checks
+	cd backend && poetry run mypy src/
+	cd cli && poetry run mypy src/
+
+check: lint type-check test-backend test-cli ## Run main quality checks
+
+build-images: ## Build backend and portal Docker images
+	docker build -f deploy/Dockerfile.backend -t urgp-api:local .
+	docker build -f deploy/Dockerfile.portal -t urgp-portal:local .
+
+clean: ## Remove build artifacts and caches
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name .pytest_cache -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name .mypy_cache -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name .ruff_cache -exec rm -rf {} + 2>/dev/null || true
-	rm -rf htmlcov/ .coverage
-
-install: ## Install project dependencies with Poetry
-	poetry install
-
-pre-commit-install: ## Install pre-commit hooks
-	poetry run pre-commit install
-
-help: ## Show this help
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	rm -rf backend/htmlcov backend/.coverage cli/htmlcov cli/.coverage frontend/portal/dist
 
 .DEFAULT_GOAL := help

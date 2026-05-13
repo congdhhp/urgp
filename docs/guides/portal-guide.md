@@ -9,7 +9,7 @@ The URGP Portal is a self-service web interface for investigating build traceabi
 Navigate to your URGP instance in a web browser:
 
 ```
-https://urgp.example.com/portal/
+https://urgp.example.com/
 ```
 
 ### Authentication

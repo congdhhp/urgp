@@ -1,0 +1,35 @@
+{
+  "name": "urgp-portal",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 5173",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 4173",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "5.29.2",
+    "antd": "5.16.5",
+    "axios": "1.6.8",
+    "dayjs": "1.11.10",
+    "lucide-react": "0.468.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-router-dom": "6.22.3",
+    "reactflow": "11.11.4",
+    "recharts": "2.12.6"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "6.4.2",
+    "@testing-library/react": "14.2.2",
+    "@types/react": "18.2.78",
+    "@types/react-dom": "18.2.25",
+    "@vitejs/plugin-react": "4.2.1",
+    "jsdom": "22.1.0",
+    "typescript": "5.4.5",
+    "vite": "4.5.3",
+    "vitest": "0.34.6"
+  }
+}

@@ -19,14 +19,15 @@ repos:
         args: [--fix]
       - id: ruff-format
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.14.1
+  - repo: local
     hooks:
-      - id: mypy
-        additional_dependencies:
-          - pydantic>=2.10
-          - pydantic-settings>=2.7
-          - types-pyyaml>=6.0
-          - types-redis>=4.6
-        args: [--config-file=pyproject.toml]
+      - id: mypy-backend
+        name: mypy backend
+        entry: poetry -C backend run mypy --config-file backend/pyproject.toml backend/src/
+        language: system
+        pass_filenames: false
+      - id: mypy-cli
+        name: mypy cli
+        entry: poetry -C cli run mypy --config-file cli/pyproject.toml cli/src/
+        language: system
         pass_filenames: false

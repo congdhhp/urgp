@@ -62,10 +62,10 @@
 
 | Control | Implementation | Test Evidence |
 |---------|---------------|---------------|
-| **API Key Authentication** | `src/urgp/dependencies.py` — `verify_api_key()` | `test_security_audit.py::TestAPIKeyAuthentication` |
-| **Credential Encryption** | `src/urgp/services/secret_config.py` — AES-256-GCM | `test_security_audit.py::TestCredentialEncryption` |
-| **Rate Limiting** | `src/urgp/middleware/rate_limiter.py` — Sliding window | `test_security_audit.py::TestRateLimiting` |
-| **HMAC Signatures** | `src/urgp/services/signature.py` — HMAC-SHA256 | `test_security_audit.py::TestManifestSignatures` |
+| **API Key Authentication** | `backend/src/urgp/dependencies.py` — `verify_api_key()` | `test_security_audit.py::TestAPIKeyAuthentication` |
+| **Credential Encryption** | `backend/src/urgp/services/secret_config.py` — AES-256-GCM | `test_security_audit.py::TestCredentialEncryption` |
+| **Rate Limiting** | `backend/src/urgp/middleware/rate_limiter.py` — Sliding window | `test_security_audit.py::TestRateLimiting` |
+| **HMAC Signatures** | `backend/src/urgp/services/signature.py` — HMAC-SHA256 | `test_security_audit.py::TestManifestSignatures` |
 | **Input Validation** | Pydantic schemas + FastAPI validation | `test_security_audit.py::TestInputValidation` |
 | **CORS** | `CORSMiddleware` in `main.py` | `test_security_audit.py::TestCORSConfiguration` |
 | **Request ID Tracing** | `middleware/request_id.py` | Middleware in app stack |

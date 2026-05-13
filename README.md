@@ -54,10 +54,10 @@ Read in order for full context:
 # Prerequisites: Docker, Docker Compose
 git clone <repo-url>
 cd urgp
-cp .env.example .env
-docker compose up -d
-docker compose exec urgp-api alembic upgrade head
-docker compose exec urgp-api python -m urgp.db.seed
+cp backend/.env.example backend/.env
+docker compose -f deploy/docker-compose.yml up -d
+docker compose -f deploy/docker-compose.yml exec urgp-api alembic upgrade head
+docker compose -f deploy/docker-compose.yml exec urgp-api python -m urgp.db.seed
 ```
 
 Current backend implementation includes the Event Gateway, RabbitMQ topology/publisher, Redis-backed idempotency and rate limiting, and a worker-driven control-plane persistence pipeline for manifests, artifacts, and commit links.
@@ -68,8 +68,18 @@ The current platform slice now runs end-to-end:
 - The worker persists manifests through `ingesting -> hydrating -> completed`.
 - Traceability hydration enriches commits with optional PR and issue metadata.
 - `GET /api/v1/products`, `GET /api/v1/builds`, compare/search/verify APIs, and notification subscription APIs are available for portal and automation use.
-- A lightweight self-service portal is served directly by FastAPI at `http://localhost:8000/portal`.
+- The React self-service portal runs as its own service at `http://localhost:5173`.
 - Email notifications can be smoke-tested locally through MailHog at `http://localhost:8025`.
+
+## Repository Layout
+
+```text
+frontend/          React portal and design references
+backend/           FastAPI API, worker, migrations, backend tests
+cli/               URGP CLI package, CLI tests, binary build script
+deploy/            Docker Compose and component Dockerfiles
+docs/              Architecture, requirements, and usage guides
+```
 
 ## License
 

@@ -221,14 +221,14 @@ refactor(manifest): extract lifecycle state machine into service
 
 | Scope | Component |
 |-------|-----------|
-| `cli` | URGP CLI (src/urgp_cli/) |
+| `cli` | URGP CLI (cli/src/urgp_cli/) |
 | `gateway` | Event Gateway (ingestion, validation) |
 | `manifest` | Build Manifest Service |
 | `hydrator` | Traceability Hydrator |
 | `immutability` | Immutability Controller |
 | `notifications` | Notification Engine |
-| `portal` | React Portal (portal/) |
-| `docker` | Docker Compose, Dockerfile |
+| `portal` | React Portal (frontend/portal/) |
+| `docker` | Docker Compose, deploy Dockerfiles |
 | `db` | Database schema, migrations |
 | `api` | API endpoints, OpenAPI |
 | `config` | Configuration management |

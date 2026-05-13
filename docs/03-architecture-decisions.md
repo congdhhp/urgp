@@ -178,7 +178,7 @@ The platform needs deployment strategies for development, staging, and productio
 
 ### Development Environment
 ```yaml
-# docker-compose.yml provides:
+# deploy/docker-compose.yml provides:
 services:
   - urgp-api        (FastAPI Control Plane)
   - urgp-worker     (Traceability Hydrator async worker)
