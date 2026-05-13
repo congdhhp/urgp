@@ -56,6 +56,24 @@ This implementation plan breaks down the URGP platform into **3 delivery phases*
 
 > ⚠️ All test tasks in Phase 1 are **MANDATORY** (not optional). Tests are the primary quality gate.
 
+### Current Phase 1 Status (2026-05-13)
+
+The codebase currently supports a **Technical MVP complete with acceptance blockers**
+status. The detailed checklist below is retained as implementation traceability; the
+authoritative closure gate is [Phase 1 Definition of Done](phase1-dod.md).
+
+| Area | Current Status | Notes |
+|------|----------------|-------|
+| P1-1 Infrastructure foundation | Implemented | Backend, CLI, portal, deploy, migrations, config, and CI structure exist in the split repository layout. |
+| P1-2 CLI build collection | Implemented | CLI package, adapters, transport, fallback, verify, and tests are present. |
+| P1-3 Event gateway | Implemented | Ingest API, auth, validation, idempotency, publisher, DLQ/admin surfaces, and rate limiting are present. |
+| P1-4 Control plane and traceability | Implemented | Product/build APIs, lifecycle, traceability services, Git/Jira integrations, and worker logic are present. |
+| P1-5 Notifications | Implemented | Subscription APIs, notification processing, and portal settings are present. |
+| P1-6 Portal frontend | Implemented with smoke coverage | Vite/React portal has route-level smoke tests and production build validation. |
+| P1-7 Integration validation | Complete locally | Integration/performance/data-accuracy suites pass with Docker services. |
+| P1-7.5 Shadow mode | Pending | Requires S32 Jenkins access and real Nightly/Weekly build data collection. |
+| P1-8 Stabilization | Technical gate complete | Quality gates and DoD have been normalized; formal sign-off remains pending. |
+
 ### P1-1: Development Environment & Infrastructure Foundation `[Week 1-2]`
 
 - [ ] P1-1.1 Initialize Python project with Poetry

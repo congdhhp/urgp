@@ -18,6 +18,7 @@ import httpx
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from pydantic import ValidationError
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -36,31 +37,20 @@ pytestmark = pytest.mark.integration
 # ---------------------------------------------------------------------------
 
 
-@pytest_asyncio.fixture(scope="session")
-def event_loop():
-    """Override the default event loop to be session-scoped."""
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest_asyncio.fixture(scope="session")
-async def app():
+@pytest.fixture
+def app():
     """Create the FastAPI application with real service connections."""
     from urgp.main import create_app
 
-    application = create_app()
-    yield application
+    return create_app()
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture
 async def started_app(app):
     """Start the lifespan of the application (connects to DB, Redis, RabbitMQ)."""
-    from contextlib import asynccontextmanager
-
     from urgp.main import lifespan
 
-    async with asynccontextmanager(lifespan)(app):
+    async with lifespan(app):
         yield app
 
 
@@ -68,8 +58,45 @@ async def started_app(app):
 async def client(started_app) -> AsyncGenerator[AsyncClient, None]:
     """httpx AsyncClient wired to the real FastAPI app via ASGI transport."""
     transport = ASGITransport(app=started_app)
-    async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
+    async with WorkerBackedAsyncClient(started_app, transport=transport, base_url="http://testserver") as ac:
         yield ac
+
+
+class WorkerBackedAsyncClient(AsyncClient):
+    """ASGI test client that processes accepted ingest payloads synchronously."""
+
+    def __init__(self, app, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self._app = app
+
+    async def post(self, url: str, *args: Any, **kwargs: Any) -> httpx.Response:
+        response = await super().post(url, *args, **kwargs)
+        if url == "/api/v1/ingest" and response.status_code == 202 and kwargs.get("json") is not None:
+            await self._process_ingest(kwargs["json"])
+        return response
+
+    async def _process_ingest(self, payload_json: dict[str, Any]) -> None:
+        from urgp.schemas.ingest import IngestPayload
+        from urgp.services.build_processing import BuildEventProcessor
+        from urgp.services.cache import CacheService
+        from urgp.services.signature import ManifestSignatureService
+
+        try:
+            payload = IngestPayload.model_validate(payload_json)
+        except ValidationError:
+            return
+
+        resources = self._app.state.resources
+        processor = BuildEventProcessor(
+            resources.require_session_factory,
+            ManifestSignatureService(resources.settings.signing_key),
+            resources.settings,
+            cache=CacheService(
+                redis_client_provider=lambda: resources.redis,
+                default_ttl=resources.settings.redis_cache_ttl,
+            ),
+        )
+        await processor.process(payload)
 
 
 # ---------------------------------------------------------------------------
@@ -97,7 +124,24 @@ async def clean_db(started_app):
 
     Uses the session_factory from the running app to execute TRUNCATE CASCADE.
     """
+    await _truncate_db(started_app)
     yield  # test runs here
+    await _truncate_db(started_app)
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def clean_redis(started_app):
+    """Clear Redis-backed rate limit and idempotency keys between tests."""
+    redis_client = getattr(started_app.state, "redis", None)
+    if redis_client is not None:
+        await redis_client.flushdb()
+    yield
+    if redis_client is not None:
+        await redis_client.flushdb()
+
+
+async def _truncate_db(started_app) -> None:
+    """Remove relational test data while preserving the migrated schema."""
 
     session_factory = started_app.state.session_factory
     if session_factory is None:

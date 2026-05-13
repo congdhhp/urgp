@@ -37,7 +37,7 @@ class TestHealthEndpoints:
         response = await client.get("/health/ready")
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "ready"
+        assert data["status"] == "healthy"
 
 
 # ---------------------------------------------------------------------------
@@ -55,7 +55,7 @@ class TestProductAndReleaseAPIs:
             "description": "Created by integration test",
         }
         response = await client.post("/api/v1/products", json=payload, headers=api_headers)
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.json()
         assert data["external_id"] == "e2e-product-create"
         assert data["name"] == "E2E Test Product"
@@ -86,7 +86,7 @@ class TestProductAndReleaseAPIs:
             json={"version": "2.0.0-RC1", "release_type": "RC", "status": "active"},
             headers=api_headers,
         )
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.json()
         assert data["version"] == "2.0.0-RC1"
 
@@ -432,4 +432,6 @@ class TestActivityAndAdminAPIs:
         response = await client.get("/api/v1/admin/dlq/count", headers=api_headers)
         assert response.status_code == 200
         data = response.json()
-        assert "count" in data
+        assert data["queue"] == "build.events.dlq"
+        assert data["message_count"] >= 0
+        assert data["consumer_count"] >= 0

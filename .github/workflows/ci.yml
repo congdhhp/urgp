@@ -8,7 +8,7 @@ on:
 
 env:
   PYTHON_VERSION: "3.11"
-  NODE_VERSION: "20"
+  NODE_VERSION: "20.19"
 
 jobs:
   backend-lint:
@@ -155,7 +155,7 @@ jobs:
         run: poetry run pytest tests/ -v --cov=src/urgp_cli --cov-report=term-missing
 
   frontend:
-    name: Frontend Build
+    name: Frontend Checks
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -175,6 +175,12 @@ jobs:
 
       - name: TypeScript type check
         run: npx tsc --noEmit
+
+      - name: Run frontend tests
+        run: npm run test
+
+      - name: Audit frontend dependencies
+        run: npm audit --audit-level=moderate
 
       - name: Build production bundle
         run: npm run build

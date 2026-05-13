@@ -1,117 +1,97 @@
-# Phase 1 — Definition of Done
+# Phase 1 Definition of Done
 
-> This document records the formal completion criteria for URGP Phase 1 (MVP).
-> Each item links to the evidence that satisfies the requirement.
+Last updated: 2026-05-13
 
-## Summary
+## Status
 
-| Metric | Value |
-|--------|-------|
-| **Phase** | 1 — MVP (Single-product pilot for S32 Design Studio) |
-| **Duration** | P1-1 through P1-8 (14 weeks) |
-| **Unit Tests** | 281+ passing |
-| **Integration Tests** | ~37 test cases (E2E + data accuracy + performance) |
-| **CI Pipeline** | 5 jobs — all green |
-| **Documentation** | 4 user guides + architecture docs |
+Phase 1 is treated as **Technical MVP complete with acceptance blockers**.
 
----
+This means the core platform slice is implemented and can be validated locally/CI, but
+Phase 1 must not be called business-complete until S32 shadow mode and formal sign-off
+are finished.
 
-## DoD Checklist
+## Scope Summary
 
-### ✅ 1. All P1 Tests Pass (CI Green)
+| Area | Status | Evidence |
+| --- | --- | --- |
+| P1-1 Infrastructure foundation | Complete | `backend/`, `deploy/docker-compose.yml`, `deploy/Dockerfile.backend`, `Makefile` |
+| P1-2 CLI build collection | Complete | `cli/src/urgp_cli/`, `cli/tests/`, `cli/scripts/build_cli.py` |
+| P1-3 Event gateway | Complete | `backend/src/urgp/api/ingest.py`, auth/rate-limit/idempotency services |
+| P1-4 Control plane and traceability | Complete | Build, product, traceability, lifecycle APIs and worker services |
+| P1-5 Notifications | Complete | Notification APIs, subscriptions, delivery history, tests |
+| P1-6 Portal frontend | Complete with smoke tests | `frontend/portal/src/`, Vitest route/page smoke coverage |
+| P1-7 E2E validation | Complete locally | `backend/tests/integration/` passes with Docker services |
+| P1-7.5 Shadow mode | Pending | Requires S32 Jenkins pipeline access and real build data |
+| P1-8 Stabilization | Technical scope complete | Current quality gates and DoD tracking |
 
-| CI Job | Status | Evidence |
-|--------|--------|----------|
-| Lint & Format (ruff) | ✅ Pass | `.github/workflows/ci.yml` — ruff check + format |
-| Type Check (mypy) | ✅ Pass | `.github/workflows/ci.yml` — mypy strict on `src/` |
-| Unit Tests (pytest) | ✅ Pass | 281+ tests, coverage ≥ 70% enforced |
-| Frontend Build (TypeScript) | ✅ Pass | `tsc --noEmit` + production build |
-| Docker Build | ✅ Pass | Multi-stage Dockerfile, image verified |
+## Technical Quality Gates
 
-**PR #8** (P1-7) and subsequent PRs confirm CI green on `devel`.
+These gates must pass before merging/releasing Phase 1 changes.
 
----
+| Gate | Command | Expected Result |
+| --- | --- | --- |
+| Backend lint | `cd backend && poetry run ruff check .` | Pass |
+| Backend type check | `cd backend && poetry run mypy src/` | Pass |
+| Backend unit tests | `cd backend && poetry run pytest tests/unit --cov=src/urgp --cov-fail-under=70` | Pass |
+| Backend integration tests | `cd backend && poetry run pytest tests/integration/ -v -m integration --timeout=120` | Pass with Docker services; migration placeholder tests skipped |
+| CLI lint | `cd cli && poetry run ruff check .` | Pass |
+| CLI type check | `cd cli && poetry run mypy src/` | Pass |
+| CLI unit tests | `cd cli && poetry run pytest tests/unit --cov=src/urgp_cli --cov-fail-under=70` | Pass |
+| Portal tests | `cd frontend/portal && npm run test` | Pass |
+| Portal build | `cd frontend/portal && npm run build` | Pass without chunk warnings |
+| Portal dependency audit | `cd frontend/portal && npm audit --audit-level=moderate` | 0 vulnerabilities |
+| Docker compose config | `docker compose -f deploy/docker-compose.yml config --quiet` | Pass |
 
-### ✅ 2. Feature Completeness
+## Acceptance Blockers
 
-| Deliverable | Phase | Status |
-|-------------|-------|--------|
-| Data Models & Database | P1-1 | ✅ Complete |
-| Ingestion Pipeline & CLI | P1-2 | ✅ Complete |
-| API Layer & Security | P1-3 | ✅ Complete |
-| Traceability Engine | P1-4 | ✅ Complete |
-| Notification System | P1-5 | ✅ Complete |
-| Portal Frontend | P1-6 | ✅ Complete |
-| E2E Integration Tests | P1-7 | ✅ Complete |
-| Stabilization & DoD | P1-8 | ✅ Complete |
+These are not code-only fixes and require operational/project input.
 
----
+| Blocker | Required Evidence |
+| --- | --- |
+| S32 Jenkins shadow mode | Non-blocking `urgp-cli push` added to S32 Nightly/Weekly pipelines for 2-4 weeks |
+| Real build data accuracy | Comparison report for at least 5 real S32 builds against the legacy Email/SharePoint flow |
+| Investigation-time metric | Before/after measurement showing target reduction from about 15 minutes to about 30 seconds |
+| Technical Lead sign-off | Checked sign-off below |
+| Security review acknowledgment | Checked sign-off below |
+| Product Owner acceptance | Checked sign-off below |
 
-### ✅ 3. User Documentation
-
-| Guide | Path | Audience |
-|-------|------|----------|
-| CLI Usage | `docs/guides/cli-usage.md` | DevOps / CI engineers |
-| Portal Guide | `docs/guides/portal-guide.md` | QA / Release managers |
-| Product Setup | `docs/guides/product-setup.md` | Platform administrators |
-| Notification Setup | `docs/guides/notification-guide.md` | All users |
-
----
-
-### ✅ 4. Security Review
+## Security Baseline
 
 | Control | Implementation | Test Evidence |
-|---------|---------------|---------------|
-| **API Key Authentication** | `backend/src/urgp/dependencies.py` — `verify_api_key()` | `test_security_audit.py::TestAPIKeyAuthentication` |
-| **Credential Encryption** | `backend/src/urgp/services/secret_config.py` — AES-256-GCM | `test_security_audit.py::TestCredentialEncryption` |
-| **Rate Limiting** | `backend/src/urgp/middleware/rate_limiter.py` — Sliding window | `test_security_audit.py::TestRateLimiting` |
-| **HMAC Signatures** | `backend/src/urgp/services/signature.py` — HMAC-SHA256 | `test_security_audit.py::TestManifestSignatures` |
-| **Input Validation** | Pydantic schemas + FastAPI validation | `test_security_audit.py::TestInputValidation` |
-| **CORS** | `CORSMiddleware` in `main.py` | `test_security_audit.py::TestCORSConfiguration` |
-| **Request ID Tracing** | `middleware/request_id.py` | Middleware in app stack |
+| --- | --- | --- |
+| API key authentication | `backend/src/urgp/middleware/api_key_auth.py` and dependencies | `backend/tests/unit/test_security_audit.py` |
+| Credential encryption | `backend/src/urgp/services/secret_config.py` | `backend/tests/unit/test_security_audit.py` |
+| Rate limiting | `backend/src/urgp/middleware/rate_limiter.py` | `backend/tests/unit/test_rate_limiter.py` |
+| HMAC signatures | `backend/src/urgp/services/signature.py` | `backend/tests/unit/test_signature.py` |
+| Input validation | Pydantic schemas + FastAPI validation | `backend/tests/unit/test_schemas.py`, API tests |
+| CORS and response headers | FastAPI middleware stack | `backend/tests/unit/test_security_audit.py` |
+| Request ID tracing | `backend/src/urgp/middleware/request_id.py` | Middleware/unit coverage |
 
----
-
-### ✅ 5. Performance Benchmarks Defined
-
-| Benchmark | Target SLA | Test |
-|-----------|-----------|------|
-| List builds API | p95 < 500ms | `test_performance.py::TestListBuildsPerformance` |
-| Get build detail | p95 < 200ms | `test_performance.py::TestGetBuildPerformance` |
-| Build comparison | < 500ms | `test_performance.py::TestBuildComparisonPerformance` |
-| Traceability query | < 2s | `test_performance.py::TestTraceabilityPerformance` |
-| Ingest latency | < 1s | `test_performance.py::TestIngestPerformance` |
-| Activity dashboard | p95 < 500ms | `test_performance.py::TestActivityDashboardPerformance` |
-
-> **Note:** Performance tests use `xfail` on local Docker environments. SLA validation
-> should be re-run on production-equivalent infrastructure.
-
----
-
-### ✅ 6. Architecture Documentation
+## Documentation
 
 | Document | Path |
-|----------|------|
-| Requirements | `docs/01-requirements.md` |
-| System Architecture | `docs/02-system-architecture.md` |
-| Architecture Decisions (ADRs) | `docs/03-architecture-decisions.md` |
-| API Specification | `docs/04-api-specification.md` |
-| Technical Design | `docs/05-technical-design.md` |
-| Migration Strategy | `docs/06-migration-strategy.md` |
-| Implementation Plan | `docs/07-implementation-plan.md` |
+| --- | --- |
+| Problem assessment | `docs/01-problem-assessment.md` |
+| Solution architecture | `docs/02-solution-architecture.md` |
+| Architecture decisions | `docs/03-architecture-decisions.md` |
+| Requirements | `docs/04-requirements.md` |
+| Technical design | `docs/05-technical-design.md` |
+| Migration strategy | `docs/06-migration-strategy.md` |
+| Implementation plan | `docs/07-implementation-plan.md` |
+| Team workplan | `docs/08-team-workplan.md` |
+| Git workflow | `docs/09-git-workflow.md` |
+| User guides | `docs/guides/` |
 
----
+## Deferred To Later Phases
 
-## Deferred Items
-
-| Item | Reason | Target |
-|------|--------|--------|
-| P1-7.5 Shadow Mode | Requires Jenkins pipeline access | Operational phase |
-| Multi-tenancy / RBAC | Phase 2 scope | P2-1 |
-| SBOM generation | Phase 2 scope | P2-2 |
-| Plugin system | Phase 2 scope | P2-3 |
-
----
+| Item | Target |
+| --- | --- |
+| Multi-tenancy and RBAC | Phase 2 |
+| SBOM generation | Phase 2 |
+| Dynamic adapter plugin system | Phase 2 |
+| Kubernetes/Helm production deployment | Phase 2 |
+| Backup/restore automation | Phase 2 |
+| Prometheus/Grafana/OpenTelemetry | Phase 2 |
 
 ## Sign-off
 

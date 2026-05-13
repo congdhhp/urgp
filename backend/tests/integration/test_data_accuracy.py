@@ -108,7 +108,11 @@ class TestTraceabilityCompleteness:
         data = trace_response.json()
         assert data["commit_count"] == 1
 
-        commit_hashes = [c["hash"] for c in data.get("commits", [])]
+        commit_hashes = [
+            commit["hash"]
+            for repository in data.get("repositories", [])
+            for commit in repository.get("commits", [])
+        ]
         assert commit_hash in commit_hashes
 
     async def test_multi_commit_traceability(
