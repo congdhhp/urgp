@@ -112,3 +112,9 @@ markers = [
     "integration: marks tests requiring running services (docker compose)",
     "slow: marks tests that take a long time to run",
 ]
+
+[tool.coverage.run]
+omit = [
+    "src/urgp/db/seed.py",
+    "src/urgp/runtime.py",
+]

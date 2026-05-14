@@ -109,6 +109,6 @@ describe("BuildDetailPage", () => {
     expect(screen.getByText("Verify Integrity")).toBeInTheDocument();
     expect(screen.getByText("Packages (1)")).toBeInTheDocument();
     expect(screen.getByText("What's New (1)")).toBeInTheDocument();
-    expect(screen.getByText("manifest-signature")).toBeInTheDocument();
+    expect(screen.getByText(/HMAC-SHA256 verified/)).toBeInTheDocument();
   });
 });
