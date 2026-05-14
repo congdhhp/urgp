@@ -109,9 +109,7 @@ class TestTraceabilityCompleteness:
         assert data["commit_count"] == 1
 
         commit_hashes = [
-            commit["hash"]
-            for repository in data.get("repositories", [])
-            for commit in repository.get("commits", [])
+            commit["hash"] for repository in data.get("repositories", []) for commit in repository.get("commits", [])
         ]
         assert commit_hash in commit_hashes
 
